@@ -273,7 +273,7 @@ function toLocal(isoString) {
   const hh = String(date.getHours()).padStart(2, '0');
   const mm = String(date.getMinutes()).padStart(2, '0');
 
-  return `${d}-${m}-${y} ${hh}:${mm}`;
+  return `${d}-${m}-${y} / ${hh}:${mm}`;
 }
 
 
@@ -454,6 +454,7 @@ async function downloadPdfSupabase() {
 </script>
 </body>
 </html>
+
 
 
 

@@ -73,18 +73,8 @@
               ><input id="idStudent" type="checkbox" /> Kartu Mahasiswa</label
             >
       </div> 
-      
-      <label>Tarif</label>
-            <select id="rateSelect">
-              <option value="5000|60000">
-                Standar — Rp 5.000 / jam • Rp 60.000 / 24 jam
-              </option>
-              <option value="10000|70000">
-                Premium — Rp 10.000 / jam • Rp 70.000 / 24 jam
-              </option>
-            </select>
 
-            <p class="muted" id="pricePreview">Total: Rp 5.000</p>
+        <p class="muted" id="pricePreview">Total: Rp 5.000</p>
       
       <div
         style="
@@ -190,12 +180,25 @@ loadBikes();
 
 const rentModal = document.getElementById("rentModal");
 const closeModal = document.getElementById("closeModal");
+const pricePreview = document.getElementById("pricePreview");
 
 function openRent(id) {
   document.getElementById("bikeId").value = id;
   document.getElementById("modalTitle").innerHTML = "Form Sewa Motor";
   rentModal.classList.add("show");
 }
+
+function updatePricePreview() {
+        const val = document.getElementById("rateSelect").value.split("|");
+        const hour = parseInt(val[0]);
+        const day = parseInt(val[1]);
+        let h = parseInt(document.getElementById("hours").value || 1);
+        if (h < 1) h = 1;
+        const days = Math.floor(h / 24),
+          rem = h % 24;
+        const total = days * day + rem * hour;
+        pricePreview.textContent = `Total: Rp ${numberWithDots(total)}`;
+      }
 
 closeModal.onclick = () => rentModal.classList.remove("show");
 

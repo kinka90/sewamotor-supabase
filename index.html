@@ -379,20 +379,24 @@ async function renderRentalsTable() {
 document.getElementById("deleteAllRentalsBtn").onclick = async () => {
   if (!confirm("Yakin ingin menghapus SEMUA riwayat sewa? Tindakan ini tidak bisa dibatalkan!")) return;
 
-  // Hapus semua baris di Supabase
-  const { error } = await db.from("rentals").delete().neq("id", 0);
+  // Hapus semua data rentals
+  const { error } = await db
+    .from("rentals")
+    .delete()
+    .not("id", "is", null); // delete all
 
   if (error) {
     alert("Gagal menghapus semua riwayat: " + error.message);
     return;
   }
 
-  // Kembalikan semua motor menjadi available (opsional)
-  await db.from("bikes").update({ status: "available" }).neq("id", 0);
+  // Reset semua status motor menjadi available
+  await db.from("bikes").update({ status: "available" }).not("id", "is", null);
 
-  alert("Semua riwayat sewa berhasil dihapus!");
+  alert("Semua riwayat berhasil dihapus!");
   renderRentalsTable();
 };
+
 
 
 /* ===============================

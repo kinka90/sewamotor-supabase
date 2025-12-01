@@ -260,6 +260,23 @@ function numberWithDots(x) {
   return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
+// Format waktu lokal
+function toLocal(isoString) {
+  if (!isoString) return "-";
+  const date = new Date(isoString);
+
+  // Format: YYYY-MM-DD HH:MM (lokal atau GMT)
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+
+  const hh = String(date.getUTCHours()).padStart(2, '0');
+  const mm = String(date.getUTCMinutes()).padStart(2, '0');
+
+  return `${y}-${m}-${d} ${hh}:${mm}`;
+}
+
+
 /* ===============================
    9. TAMBAH MOTOR (ADMIN) - simple prompt
    =============================== */
@@ -308,8 +325,8 @@ async function renderRentalsTable() {
       <td>${b ? b.name : '-'}</td>
       <td>${r.duration} jam</td>
       <td>Rp ${r.total}</td>
-      <td>${r.start_time ? r.start_time.replace("T"," ").substring(0,16) : '-'}</td>
-      <td>${r.end_time ? r.end_time.replace("T"," ").substring(0,16) : '-'}</td>
+      <td>${toLocal(r.start_time)}</td>
+      <td>${toLocal(r.end_time)}</td>
       <td>${r.status}</td>
       <td>
         ${r.status === "ongoing" 

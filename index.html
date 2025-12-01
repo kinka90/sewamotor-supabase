@@ -193,9 +193,11 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
   });
 
   if (rentErr) {
-    alert("Gagal menyewa!");
-    return;
-  }
+  alert("Gagal menyewa: " + rentErr.message);
+  console.log(rentErr);
+  return;
+}
+
 
   // Update status motor
   await db.from("bikes").update({ status: "rented" }).eq("id", bikeId);
@@ -420,4 +422,5 @@ async function downloadPdfSupabase() {
 </script>
 </body>
 </html>
+
 

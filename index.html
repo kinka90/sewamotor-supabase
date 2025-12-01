@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Aplikasi Sewa Motor - Supabase</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  body { font-family: Inter, sans-serif; padding:20px; background:#f6f7fb; }
+  .container { max-width:1100px; margin:auto; }
+  h1 { margin:0; font-size:22px; }
+  .btn { background:#2b7a78; color:#fff; padding:8px 12px; border-radius:8px; border:none; cursor:pointer; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:18px; }
+  .card { background:white; padding:12px; border-radius:12px; box-shadow:0 6px 16px rgba(0,0,0,0.08); }
+  .motor-img { height:140px; border-radius:8px; background:#eef; display:flex; align-items:center; justify-content:center; font-size:48px; }
+  .status { padding:6px 8px; border-radius:8px; font-weight:600; }
+  .available { background:#e6fff9; color:#007a5f; }
+  .rented { background:#fff2f2; color:#b90909; }
+  .actions { margin-top:10px; display:flex; gap:8px; }
+  .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); justify-content:center; align-items:center; }
+  .modal.show { display:flex; }
+  .dialog { background:white; padding:18px; border-radius:12px; width:420px; }
+  table { width:100%; border-collapse:collapse; }
+  td, th { padding:8px; border-bottom:1px solid #eee; }
+  footer { text-align:center; margin-top:20px; color:#666; }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<header style="display:flex;justify-content:space-between;align-items:center;">
+  <h1>Aplikasi Sewa Motor – Supabase</h1>
+  <button id="adminBtn" class="btn"><i class="fa-solid fa-lock"></i> Admin</button>
+</header>
+
+<p style="color:#666;font-size:13px;">
+  Semua data tersimpan realtime di Supabase. Cocok untuk multi pengguna.
+</p>
+
+<div id="motorGrid" class="grid"></div>
+
+<!-- Modal Sewa -->
+<div id="rentModal" class="modal">
+  <div class="dialog">
+    <h3 id="modalTitle"></h3>
+    <form id="rentForm">
+      <input type="hidden" id="bikeId" />
+
+      <label>Nama Penyewa</label>
+      <input id="name" required>
+
+      <label>No HP</label>
+      <input id="phone" required>
+
+      <label>Durasi (Jam)</label>
+      <input id="hours" type="number" value="1" min="1" required>
+
+      <button class="btn" style="width:100%;margin-top:12px;">Konfirmasi Sewa</button>
+    </form>
+
+    <button id="closeModal" class="btn" style="background:#777;width:100%;margin-top:10px;">Batal</button>
+  </div>
+</div>
+
+<!-- Admin Panel -->
+<div id="adminPanel" class="card" style="margin-top:20px;display:none;">
+  <h3>Admin Panel</h3>
+  <button id="addBikeBtn" class="btn"><i class="fa fa-plus"></i> Tambah Motor</button>
+
+  <h4>Riwayat Sewa</h4>
+  <table>
+    <thead>
+      <tr><th>Nama</th><th>Motor</th><th>Durasi</th><th>Status</th></tr>
+    </thead>
+    <tbody id="rentalTable"></tbody>
+  </table>
+</div>
+
+</div>
+
+<footer>Realtime by Supabase</footer>
+
+<script>
+/* ===============================
+     1. INISIALISASI SUPABASE
+   =============================== */
+
+const SUPABASE_URL = "https://ifafjxuwhaikoiateisi.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmYWZqeHV3aGFpa29pYXRlaXNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDg4NjgsImV4cCI6MjA4MDEyNDg2OH0.id3IaMfUpgH8M_P2nB9G53scQdy5r7FHS_DrLpznHTY";
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+/* ===============================
+     2. REALTIME SUBSCRIBE
+   =============================== */
+
+db.channel("bikes-change")
+  .on("postgres_changes", { event: "*", schema: "public", table: "bikes" },
+    () => loadBikes()
+  )
+  .subscribe();
+
+db.channel("rentals-change")
+  .on("postgres_changes", { event: "*", schema: "public", table: "rentals" },
+    () => loadRentals()
+  )
+  .subscribe();
+
+/* ===============================
+     3. RENDER LIST MOTOR
+   =============================== */
+
+async function loadBikes() {
+  const { data } = await db.from("bikes").select("*");
+
+  const grid = document.getElementById("motorGrid");
+  grid.innerHTML = "";
+
+  data.forEach(b => {
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `
+      <div class="motor-img">${b.emoji}</div>
+      <h3>${b.name}</h3>
+      <p>Rp ${b.rate_hour}/jam</p>
+      <span class="status ${b.status === 'available' ? 'available':'rented'}">
+        ${b.status === "available" ? "Tersedia" : "Disewa"}
+      </span>
+      <div class="actions">
+        <button class="btn" onclick="openRent('${b.id}')" ${b.status !== "available" ? "disabled":""}>Sewa</button>
+      </div>
+    `;
+    grid.appendChild(div);
+  });
+}
+
+loadBikes();
+
+/* ===============================
+     4. MODAL SEWA
+   =============================== */
+
+const rentModal = document.getElementById("rentModal");
+const closeModal = document.getElementById("closeModal");
+
+function openRent(id) {
+  document.getElementById("bikeId").value = id;
+  document.getElementById("modalTitle").innerHTML = "Form Sewa Motor";
+  rentModal.classList.add("show");
+}
+
+closeModal.onclick = () => rentModal.classList.remove("show");
+
+
+/* ===============================
+     5. SIMPAN SEWA KE SUPABASE
+   =============================== */
+
+document.getElementById("rentForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const bikeId = document.getElementById("bikeId").value;
+  const name = document.getElementById("name").value;
+  const phone = document.getElementById("phone").value;
+  const hours = parseInt(document.getElementById("hours").value);
+
+  // Ambil data motor
+  const { data: bike } = await db.from("bikes").select("*").eq("id", bikeId).single();
+
+  // Hitung total harga
+  const total = hours * bike.rate_hour;
+
+  // Tentukan waktu mulai dan selesai
+  const start = new Date();
+  const end = new Date();
+  end.setHours(end.getHours() + hours);
+
+  // Insert sewa
+  const { error: rentErr } = await db.from("rentals").insert({
+    name,
+    phone,
+    bike_id: bikeId,
+    duration: hours,
+    total,
+    start_time: start.toISOString(),
+    end_time: end.toISOString(),
+    status: "ongoing"
+  });
+
+  if (rentErr) {
+    alert("Gagal menyewa!");
+    return;
+  }
+
+  // Update status motor
+  await db.from("bikes").update({ status: "rented" }).eq("id", bikeId);
+
+  alert("Motor berhasil disewa!");
+  rentModal.classList.remove("show");
+});
+
+
+/* ===============================
+     6. ADMIN LOGIN TOGGLE
+   =============================== */
+
+const adminPanel = document.getElementById("adminPanel");
+document.getElementById("adminBtn").onclick = () => {
+  adminPanel.style.display = adminPanel.style.display === "none" ? "block" : "none";
+};
+
+
+/* ===============================
+     7. LOAD RIWAYAT SEWA
+   =============================== */
+
+async function loadRentals() {
+  const { data } = await db.from("rentals").select("*").order("start_time", { ascending: false });
+
+  const tbody = document.getElementById("rentalTable");
+  tbody.innerHTML = "";
+
+  data.forEach(r => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${r.name}</td>
+      <td>${r.bike_id}</td>
+      <td>${r.duration} jam</td>
+      <td>${r.status}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+loadRentals();
+
+/* ===============================
+   8. HELPER
+   =============================== */
+
+function numberWithDots(x) {
+  if (x == null) return "0";
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+/* ===============================
+   9. TAMBAH MOTOR (ADMIN) - simple prompt
+   =============================== */
+
+document.getElementById("addBikeBtn").addEventListener("click", async () => {
+  const name = prompt("Nama motor:");
+  if (!name) return alert("Batal: nama kosong.");
+
+  const rateHour = parseInt(prompt("Tarif per jam (angka):", "5000")) || 0;
+  const rateDay = parseInt(prompt("Tarif per 24 jam (angka):", "60000")) || 0;
+  const emoji = prompt("Emoji/ikon (opsional):", "🛵") || "🛵";
+
+  const { error } = await db.from("bikes").insert([{
+    name,
+    rate_hour: rateHour,
+    rate_day: rateDay,
+    status: "available",
+    emoji
+  }]);
+
+  if (error) return alert("Gagal tambah motor: " + error.message);
+  alert("Motor ditambahkan.");
+});
+
+/* ===============================
+   10. RENDER RENTALS TABLE (dengan nama motor)
+   =============================== */
+
+async function renderRentalsTable() {
+  // ambil rentals terbaru
+  const { data: rentalsData, error: rentErr } = await db.from("rentals").select("*").order("start_time", { ascending: false });
+  if (rentErr) return console.error(rentErr);
+
+  const tbody = document.getElementById("rentalTable");
+  tbody.innerHTML = "";
+
+  for (const r of rentalsData) {
+    // ambil nama motor
+    let bikeName = r.bike_name || "";
+    if (!bikeName) {
+      const { data: bdata } = await db.from("bikes").select("name").eq("id", r.bike_id).single();
+      bikeName = bdata ? bdata.name : r.bike_id;
+    }
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${r.name}</td>
+      <td>${bikeName}</td>
+      <td>${r.duration || "-"} jam</td>
+      <td>${r.status}</td>
+      <td>
+        ${r.status === "ongoing" ? `<button class="btn" onclick="returnBike('${r.id}','${r.bike_id}')">Kembalikan</button>` : ""}
+        <button class="btn" style="background:#b03;color:#fff;margin-left:6px;" onclick="deleteRentalSupabase('${r.id}','${r.bike_id}')">Hapus</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+/* ===============================
+   11. KEMBALIKAN MOTOR
+   =============================== */
+
+async function returnBike(rentalId, bikeId) {
+  if (!confirm("Kembalikan motor dan tutup transaksi?")) return;
+
+  const { error: e1 } = await db.from("rentals").update({ status: "done" }).eq("id", rentalId);
+  if (e1) return alert("Gagal update rental: " + e1.message);
+
+  const { error: e2 } = await db.from("bikes").update({ status: "available" }).eq("id", bikeId);
+  if (e2) return alert("Gagal update motor: " + e2.message);
+
+  alert("Pengembalian berhasil.");
+}
+
+/* ===============================
+   12. HAPUS TRANSAKSI (SUPABASE)
+   =============================== */
+
+async function deleteRentalSupabase(rentalId, bikeId) {
+  if (!confirm("Hapus transaksi ini?")) return;
+
+  const { error } = await db.from("rentals").delete().eq("id", rentalId);
+  if (error) return alert("Gagal hapus transaksi: " + error.message);
+
+  // pastikan motor tersedia setelah hapus (opsional)
+  await db.from("bikes").update({ status: "available" }).eq("id", bikeId);
+
+  alert("Transaksi dihapus.");
+}
+
+/* ===============================
+   13. HAPUS / EDIT MOTOR (ADMIN) - simple
+   =============================== */
+
+async function deleteBike(id) {
+  if (!confirm("Hapus motor ini?")) return;
+  const { error } = await db.from("bikes").delete().eq("id", id);
+  if (error) return alert("Gagal hapus motor: " + error.message);
+  alert("Motor dihapus.");
+}
+
+async function editBike(id) {
+  const { data: b } = await db.from("bikes").select("*").eq("id", id).single();
+  if (!b) return alert("Motor tidak ditemukan.");
+
+  const newName = prompt("Nama motor:", b.name);
+  if (newName === null) return;
+  const newHour = parseInt(prompt("Tarif per jam:", b.rate_hour)) || b.rate_hour;
+  const newDay = parseInt(prompt("Tarif per 24 jam:", b.rate_day)) || b.rate_day;
+  const newEmoji = prompt("Emoji:", b.emoji) || b.emoji;
+
+  const { error } = await db.from("bikes").update({
+    name: newName,
+    rate_hour: newHour,
+    rate_day: newDay,
+    emoji: newEmoji
+  }).eq("id", id);
+
+  if (error) return alert("Gagal update motor: " + error.message);
+  alert("Motor diperbarui.");
+}
+
+/* ===============================
+   14. INITIAL REFRESH
+   =============================== */
+
+async function initialRefresh() {
+  await loadBikes();
+  await renderRentalsTable();
+}
+
+initialRefresh();
+
+/* ===============================
+   15. OPTIONAL: DOWNLOAD PDF (if jsPDF ter-include)
+   =============================== */
+
+async function downloadPdfSupabase() {
+  // require jsPDF + autotable sudah diload di halaman
+  const { data: rentals } = await db.from("rentals").select("*").order("start_time", { ascending: false });
+  if (!rentals || rentals.length === 0) return alert("Belum ada data sewa.");
+
+  const { jsPDF } = window.jspdf || {};
+  if (!jsPDF) return alert("jsPDF tidak ditemukan. Pastikan script jsPDF ada di halaman.");
+
+  const doc = new jsPDF("l", "pt", "a4");
+  doc.setFontSize(12);
+  doc.text("Buku Kas Sewa Motor", 40, 40);
+
+  const rows = [];
+  for (const r of rentals) {
+    const { data: bike } = await db.from("bikes").select("name").eq("id", r.bike_id).single();
+    rows.push([
+      r.name, bike?.name || r.bike_id, (r.duration || "-") + " jam",
+      "Rp " + numberWithDots(r.total), new Date(r.start_time).toLocaleString(), new Date(r.end_time).toLocaleString(), r.status
+    ]);
+  }
+
+  doc.autoTable({
+    startY: 70,
+    head: [["Nama", "Motor", "Durasi", "Total", "Mulai", "Selesai", "Status"]],
+    body: rows,
+    styles: { fontSize: 9 }
+  });
+
+  doc.save("BukuKasSewaMotor.pdf");
+}
+
+</script>
+</body>
+</html>
+

@@ -75,7 +75,16 @@
   <h4>Riwayat Sewa</h4>
   <table>
     <thead>
-      <tr><th>Nama</th><th>Motor</th><th>Durasi</th><th>Status</th></tr>
+      <tr>
+        <th>Nama</th>
+        <th>Motor</th>
+        <th>Durasi</th>
+        <th>Total</th>
+        <th>Mulai</th>
+        <th>Selesai</th>
+        <th>Status</th>
+        <th>Aksi</th>
+      </tr>
     </thead>
     <tbody id="rentalTable"></tbody>
   </table>
@@ -101,13 +110,13 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 db.channel("bikes-change")
   .on("postgres_changes", { event: "*", schema: "public", table: "bikes" },
-    () => loadBikes()
+    () => renderRentalsTable()
   )
   .subscribe();
 
 db.channel("rentals-change")
   .on("postgres_changes", { event: "*", schema: "public", table: "rentals" },
-    () => loadRentals()
+    () => renderRentalsTable()
   )
   .subscribe();
 
@@ -239,7 +248,8 @@ async function loadRentals() {
   });
 }
 
-loadRentals();
+renderRentalsTable();
+
 
 /* ===============================
    8. HELPER
@@ -279,35 +289,40 @@ document.getElementById("addBikeBtn").addEventListener("click", async () => {
    =============================== */
 
 async function renderRentalsTable() {
-  // ambil rentals terbaru
-  const { data: rentalsData, error: rentErr } = await db.from("rentals").select("*").order("start_time", { ascending: false });
-  if (rentErr) return console.error(rentErr);
+  const { data: rentals } = await db
+    .from("rentals")
+    .select("*")
+    .order("start_time", { ascending: false });
 
   const tbody = document.getElementById("rentalTable");
   tbody.innerHTML = "";
 
-  for (const r of rentalsData) {
-    // ambil nama motor
-    let bikeName = r.bike_name || "";
-    if (!bikeName) {
-      const { data: bdata } = await db.from("bikes").select("name").eq("id", r.bike_id).single();
-      bikeName = bdata ? bdata.name : r.bike_id;
-    }
+  for (const r of rentals) {
+
+    // Ambil nama motor
+    const { data: b } = await db.from("bikes").select("*").eq("id", r.bike_id).single();
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${r.name}</td>
-      <td>${bikeName}</td>
-      <td>${r.duration || "-"} jam</td>
+      <td>${b ? b.name : '-'}</td>
+      <td>${r.duration} jam</td>
+      <td>Rp ${r.total}</td>
+      <td>${r.start_time ? r.start_time.replace("T"," ").substring(0,16) : '-'}</td>
+      <td>${r.end_time ? r.end_time.replace("T"," ").substring(0,16) : '-'}</td>
       <td>${r.status}</td>
       <td>
-        ${r.status === "ongoing" ? `<button class="btn" onclick="returnBike('${r.id}','${r.bike_id}')">Kembalikan</button>` : ""}
-        <button class="btn" style="background:#b03;color:#fff;margin-left:6px;" onclick="deleteRentalSupabase('${r.id}','${r.bike_id}')">Hapus</button>
+        ${r.status === "ongoing" 
+          ? `<button class="btn" onclick="returnBike('${r.id}','${r.bike_id}')">Selesai</button>` 
+          : ""}
+        <button class="btn" style="background:#b03;color:#fff;margin-left:6px;"
+         onclick="deleteRentalSupabase('${r.id}','${r.bike_id}')">Hapus</button>
       </td>
     `;
     tbody.appendChild(tr);
   }
 }
+
 
 /* ===============================
    11. KEMBALIKAN MOTOR
@@ -422,5 +437,6 @@ async function downloadPdfSupabase() {
 </script>
 </body>
 </html>
+
 
 

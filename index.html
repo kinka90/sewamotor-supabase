@@ -265,7 +265,6 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
   const { error } = await db.from("rentals").insert({
     name,
     phone,
-    phone_admin: phoneAdmin,
     bike_id: bikeId,
     duration: hours,
     total,
@@ -288,35 +287,31 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
   const struk = 
 `*Sewa Motor Berhasil*
 
-Nama: ${name}
-No HP: ${phone}
+  Nama: ${name}
+  No HP: ${phone}
 
-Motor: ${bikeId}
-Durasi: ${hours} jam
+  Motor: ${bikeId}
+  Durasi: ${hours} jam
 
-Mulai: ${start.toLocaleString()}
-Selesai: ${end.toLocaleString()}
+  Mulai: ${start.toLocaleString()}
+  Selesai: ${end.toLocaleString()}
 
-Total: Rp ${total.toLocaleString()}
+  Total: Rp ${total.toLocaleString()}
 
-KTP: ${hasKTP ? "Ya" : "Tidak"}
-KTM: ${hasKTM ? "Ya" : "Tidak"}
+  KTP: ${hasKTP ? "Ya" : "Tidak"}
+  KTM: ${hasKTM ? "Ya" : "Tidak"}
 
-Terima kasih telah menggunakan layanan kami.
-`;
+  Terima kasih telah menggunakan layanan kami.
+  `;
 
   // Format WA agar 08xxxxx → 628xxxxxx
   function formatWA(num) {
     return num.replace(/^\+?0/, "62").replace(/\s+/g, "");
   }
 
-  const adminWA = formatWA(phoneAdmin);
   const renterWA = formatWA(phone);
 
   const waText = encodeURIComponent(struk);
-
-  // Kirim otomatis ke admin
-  window.open(`https://wa.me/${adminWA}?text=${waText}`, "_blank");
 
   // Kirim otomatis ke penyewa
   window.open(`https://wa.me/${renterWA}?text=${waText}`, "_blank");
@@ -494,12 +489,7 @@ async function renderRentalsTable() {
     tr.innerHTML = `
       <td>${r.name}</td>
       <td>${b ? b.name : '-'}</td>
-      <td>
-        ${r.phone}<br>
-        <span style="font-size:11px;color:#777;">
-          Admin: ${r.phone_admin ?? "-"}
-        </span>
-      </td>
+      <td>${r.phone}</td>
       <td>${r.duration} jam</td>
       <td>${totalDisplay}</td>
       <td>${toLocal(r.start_time)}</td>

@@ -338,26 +338,60 @@ document.getElementById("addBikeBtn").addEventListener("click", async () => {
    10. RENDER RENTALS TABLE (dengan nama motor)
    =============================== */
 
-let endDisplay = toLocal(r.end_time);
-let totalDisplay = "Rp " + numberWithDots(r.total);
+async function renderRentalsTable() {
+  const { data: rentals } = await db
+    .from("rentals")
+    .select("*")
+    .order("start_time", { ascending: false });
 
-if (r.status === "selesai" && r.return_time) {
-  const returnTime = new Date(r.return_time);
-  const startTime = new Date(r.start_time);
-  const diffHours = Math.ceil((returnTime - startTime) / (1000*60*60));
+  const tbody = document.getElementById("rentalTable");
+  tbody.innerHTML = "";
 
-  // Hitung total baru
-  let total = 0;
-  if (diffHours >= 24) {
-    const days = Math.floor(diffHours / 24);
-    const remainingHours = diffHours % 24;
-    total = (days * b.rate_day) + (remainingHours * b.rate_hour);
-  } else {
-    total = diffHours * b.rate_hour;
+  for (const r of rentals) {
+    const { data: b } = await db.from("bikes").select("*").eq("id", r.bike_id).single();
+
+    let endDisplay = toLocal(r.end_time);
+    let totalDisplay = "Rp " + numberWithDots(r.total);
+
+    if (r.status === "selesai" && r.return_time) {
+      const returnTime = new Date(r.return_time);
+      const startTime = new Date(r.start_time);
+      const diffHours = Math.ceil((returnTime - startTime) / (1000*60*60));
+
+      // Hitung total baru
+      let total = 0;
+      if (diffHours >= 24) {
+        const days = Math.floor(diffHours / 24);
+        const remainingHours = diffHours % 24;
+        total = (days * b.rate_day) + (remainingHours * b.rate_hour);
+      } else {
+        total = diffHours * b.rate_hour;
+      }
+
+      endDisplay = toLocal(returnTime);
+      totalDisplay = "Rp " + numberWithDots(total);
+    }
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${r.name}</td>
+      <td>${b ? b.name : '-'}</td>
+      <td>${r.duration} jam</td>
+      <td>${totalDisplay}</td>
+      <td>${toLocal(r.start_time)}</td>
+      <td>${toLocal(r.end_time)}</td>
+      <td>${r.status}</td>
+      <td>${toLocal(r.return_time)}</td>
+      <td>
+        ${r.status === "ongoing" 
+          ? `<button class="btn" onclick="returnBike('${r.id}','${r.bike_id}')">Selesai</button>` 
+          : ""}
+        <button class="btn" style="background:#b03;color:#fff;margin-left:6px;"
+          onclick="deleteRentalSupabase('${r.id}','${r.bike_id}')">Hapus</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
   }
-
-  endDisplay = toLocal(returnTime);
-  totalDisplay = "Rp " + numberWithDots(total);
 }
 
 

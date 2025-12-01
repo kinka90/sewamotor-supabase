@@ -338,59 +338,26 @@ document.getElementById("addBikeBtn").addEventListener("click", async () => {
    10. RENDER RENTALS TABLE (dengan nama motor)
    =============================== */
 
-async function renderRentalsTable() {
-  const { data: rentals } = await db
-    .from("rentals")
-    .select("*")
-    .order("start_time", { ascending: false });
+let endDisplay = toLocal(r.end_time);
+let totalDisplay = "Rp " + numberWithDots(r.total);
 
-  const tbody = document.getElementById("rentalTable");
-  tbody.innerHTML = "";
+if (r.status === "selesai" && r.return_time) {
+  const returnTime = new Date(r.return_time);
+  const startTime = new Date(r.start_time);
+  const diffHours = Math.ceil((returnTime - startTime) / (1000*60*60));
 
-  for (const r of rentals) {
-    const { data: b } = await db.from("bikes").select("*").eq("id", r.bike_id).single();
-
-    let endDisplay = toLocal(r.end_time);
-    let totalDisplay = "Rp " + numberWithDots(r.total);
-
-    // Jika status "selesai" tapi end_time masih null / ingin pakai waktu selesai klik
-    if (r.status === "selesai") {
-      const now = new Date(r.end_time || new Date()); // waktu selesai sebenarnya
-      const start = new Date(r.start_time);
-      const diffHours = Math.ceil((now - start) / (1000 * 60 * 60));
-
-      // Hitung total baru untuk tampilkan
-      let total = 0;
-      if (diffHours >= 24) {
-        const days = Math.floor(diffHours / 24);
-        const remainingHours = diffHours % 24;
-        total = (days * b.rate_day) + (remainingHours * b.rate_hour);
-      } else {
-        total = diffHours * b.rate_hour;
-      }
-      endDisplay = toLocal(now);
-      totalDisplay = "Rp " + numberWithDots(total);
-    }
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${r.name}</td>
-      <td>${b ? b.name : '-'}</td>
-      <td>${r.duration} jam</td>
-      <td>${totalDisplay}</td>
-      <td>${toLocal(r.start_time)}</td>
-      <td>${endDisplay}</td>
-      <td>${r.status}</td>
-      <td>
-        ${r.status === "ongoing" 
-          ? `<button class="btn" onclick="returnBike('${r.id}','${r.bike_id}')">Selesai</button>` 
-          : ""}
-        <button class="btn" style="background:#b03;color:#fff;margin-left:6px;"
-          onclick="deleteRentalSupabase('${r.id}','${r.bike_id}')">Hapus</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
+  // Hitung total baru
+  let total = 0;
+  if (diffHours >= 24) {
+    const days = Math.floor(diffHours / 24);
+    const remainingHours = diffHours % 24;
+    total = (days * b.rate_day) + (remainingHours * b.rate_hour);
+  } else {
+    total = diffHours * b.rate_hour;
   }
+
+  endDisplay = toLocal(returnTime);
+  totalDisplay = "Rp " + numberWithDots(total);
 }
 
 
@@ -479,13 +446,12 @@ async function returnBike(rentalId, bikeId) {
   const { data: rental, error: e1 } = await db.from("rentals").select("*").eq("id", rentalId).single();
   if (e1) return alert("Gagal ambil data rental: " + e1.message);
 
-  // Ambil data motor
   const { data: bike, error: e2 } = await db.from("bikes").select("*").eq("id", bikeId).single();
   if (e2) return alert("Gagal ambil data motor: " + e2.message);
 
-  const now = new Date();                 // waktu selesai klik
+  const now = new Date();           // waktu kembalikan
   const start = new Date(rental.start_time);
-  const diffHours = Math.ceil((now - start) / (1000 * 60 * 60)); // durasi aktual
+  const diffHours = Math.ceil((now - start) / (1000 * 60 * 60));
 
   // Hitung total baru
   let total = 0;
@@ -497,10 +463,10 @@ async function returnBike(rentalId, bikeId) {
     total = diffHours * bike.rate_hour;
   }
 
-  // Update rental: total, waktu selesai, status
+  // Update rental: simpan return_time & total, status jadi "selesai"
   const { error: e3 } = await db.from("rentals").update({
     total: total,
-    end_time: now.toISOString(),
+    return_time: now.toISOString(), // baru
     status: "selesai"
   }).eq("id", rentalId);
 
@@ -511,8 +477,9 @@ async function returnBike(rentalId, bikeId) {
   if (e4) return alert("Gagal update motor: " + e4.message);
 
   alert("Pengembalian berhasil.");
-  renderRentalsTable(); // refresh tabel
+  renderRentalsTable();
 }
+
 
 
 

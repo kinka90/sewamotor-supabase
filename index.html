@@ -183,11 +183,11 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
 
   // Hitung total harga (Logika harian + jam)
   let total = 0;
-  
+
   if (hours >= 24) {
     const days = Math.floor(hours / 24);      // jumlah hari
     const remainingHours = hours % 24;        // sisa jam
-  
+
     total = (days * bike.rate_day) + (remainingHours * bike.rate_hour);
   } else {
     total = hours * bike.rate_hour;
@@ -337,7 +337,7 @@ async function renderRentalsTable() {
       <td>Rp ${r.total}</td>
       <td>${toLocal(r.start_time)}</td>
       <td>${toLocal(r.end_time)}</td>
-      <td>${r.status}</td>
+      <td>${toLocal(r.status)}</td>
       <td>
         ${r.status === "ongoing" 
           ? `<button class="btn" onclick="returnBike('${r.id}','${r.bike_id}')">Selesai</button>` 
@@ -358,8 +358,12 @@ async function renderRentalsTable() {
 async function returnBike(rentalId, bikeId) {
   if (!confirm("Kembalikan motor dan tutup transaksi?")) return;
 
-  const { error: e1 } = await db.from("rentals").update({ status: "done" }).eq("id", rentalId);
-  if (e1) return alert("Gagal update rental: " + e1.message);
+  const finish = new Date().toISOString();
+
+  const { error: e1 } = await db.from("rentals").update({
+    status: finish   // simpan tanggal & jam
+  }).eq("id", rentalId);
+
 
   const { error: e2 } = await db.from("bikes").update({ status: "available" }).eq("id", bikeId);
   if (e2) return alert("Gagal update motor: " + e2.message);
@@ -464,8 +468,6 @@ async function downloadPdfSupabase() {
 </script>
 </body>
 </html>
-
-
 
 
 

@@ -73,6 +73,12 @@
   <button id="addBikeBtn" class="btn"><i class="fa fa-plus"></i> Tambah Motor</button>
 
   <h4>Riwayat Sewa</h4>
+
+  <button id="deleteAllRentalsBtn" class="btn" 
+  style="background:#b90909;color:white;margin-bottom:10px;">
+  <i class="fa fa-trash"></i> Hapus Semua Riwayat
+  </button>
+
   <table>
     <thead>
       <tr>
@@ -366,6 +372,27 @@ async function renderRentalsTable() {
     tbody.appendChild(tr);
   }
 }
+
+/* ===============================
+    HAPUS SEMUA RIWAYAT SEWA
+   =============================== */
+document.getElementById("deleteAllRentalsBtn").onclick = async () => {
+  if (!confirm("Yakin ingin menghapus SEMUA riwayat sewa? Tindakan ini tidak bisa dibatalkan!")) return;
+
+  // Hapus semua baris di Supabase
+  const { error } = await db.from("rentals").delete().neq("id", 0);
+
+  if (error) {
+    alert("Gagal menghapus semua riwayat: " + error.message);
+    return;
+  }
+
+  // Kembalikan semua motor menjadi available (opsional)
+  await db.from("bikes").update({ status: "available" }).neq("id", 0);
+
+  alert("Semua riwayat sewa berhasil dihapus!");
+  renderRentalsTable();
+};
 
 
 /* ===============================

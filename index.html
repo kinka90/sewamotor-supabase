@@ -47,7 +47,7 @@
 <!-- Modal Sewa -->
 <div id="rentModal" class="modal">
   <div class="dialog">
-    <h3 id="modalTitle"></h3>
+    <h3 id="modalTitle">Form Sewa Motor</h3>
     <form id="rentForm">
       <input type="hidden" id="bikeId" />
 
@@ -66,10 +66,11 @@
       <label>Pilih Tanggal & Waktu Sewa</label>
       <input id="rentalDate" type="datetime-local" required />
 
-      <label>Ketentuan</label><br>
-      <input type="checkbox" id="ktp" /> Punya KTP
-      <input type="checkbox" id="ktm" /> Punya Kartu Mahasiswa
-      <br><br>
+      <div style="margin-top:10px;">
+        <strong>Ketentuan:</strong><br>
+        <label><input type="checkbox" id="ktp" /> Punya KTP</label>
+        <label style="margin-left:12px;"><input type="checkbox" id="ktm" /> Punya Kartu Mahasiswa</label>
+      </div>
 
       <label>Tarif per Jam</label>
       <input id="rate" type="number" readonly />
@@ -84,6 +85,15 @@
   </div>
 </div>
 
+<script>
+  // Tombol Batal modal
+  const rentModal = document.getElementById("rentModal");
+  document.getElementById("closeModal").onclick = () => {
+    rentModal.classList.remove("show");
+  };
+</script>
+
+
 
 <!-- Admin Panel -->
 <div id="adminPanel" class="card" style="margin-top:20px;display:none;">
@@ -96,24 +106,23 @@
   style="background:#b90909;color:white;margin-bottom:10px;">
   <i class="fa fa-trash"></i> Hapus Semua Riwayat
   </button>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Nama</th>
-        <th>Motor</th>
-        <th>No HP</th>
-        <th>Durasi</th>
-        <th>Total</th>
-        <th>Mulai</th>
-        <th>Selesai</th>
-        <th>Kembalikan</th>
-        <th>Status</th>
-        <th>Aksi</th>
-      </tr>
-    </thead>
-    <tbody id="rentalTable"></tbody>
-  </table>
+<table>
+  <thead>
+    <tr>
+      <th>Nama</th>
+      <th>Motor</th>
+      <th>No HP</th>
+      <th>Durasi</th>
+      <th>Total</th>
+      <th>Mulai</th>
+      <th>Selesai</th>
+      <th>KTP/KTM</th>
+      <th>Status</th>
+      <th>Aksi</th>
+    </tr>
+  </thead>
+  <tbody id="rentalTable"></tbody>
+</table>
 </div>
 
 </div>
@@ -423,6 +432,7 @@ document.getElementById("addBikeBtn").addEventListener("click", async () => {
    10. RENDER RENTALS TABLE (dengan nama motor)
    =============================== */
 
+// Render rentals table update
 async function renderRentalsTable() {
   const { data: rentals } = await db
     .from("rentals")
@@ -434,28 +444,7 @@ async function renderRentalsTable() {
 
   for (const r of rentals) {
     const { data: b } = await db.from("bikes").select("*").eq("id", r.bike_id).single();
-
-    let endDisplay = toLocal(r.end_time);
-    let totalDisplay = "Rp " + numberWithDots(r.total);
-
-    if (r.status === "selesai" && r.return_time) {
-      const returnTime = new Date(r.return_time);
-      const startTime = new Date(r.start_time);
-      const diffHours = Math.ceil((returnTime - startTime) / (1000*60*60));
-
-      // Hitung total baru
-      let total = 0;
-      if (diffHours >= 24) {
-        const days = Math.floor(diffHours / 24);
-        const remainingHours = diffHours % 24;
-        total = (days * b.rate_day) + (remainingHours * b.rate_hour);
-      } else {
-        total = diffHours * b.rate_hour;
-      }
-
-      endDisplay = toLocal(returnTime);
-      totalDisplay = "Rp " + numberWithDots(total);
-    }
+    const totalDisplay = "Rp " + numberWithDots(r.total);
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -466,7 +455,7 @@ async function renderRentalsTable() {
       <td>${totalDisplay}</td>
       <td>${toLocal(r.start_time)}</td>
       <td>${toLocal(r.end_time)}</td>
-      <td>${toLocal(r.return_time)}</td>
+      <td>${r.ktp ? "KTP " : ""}${r.ktm ? "KTM" : ""}</td>
       <td>${r.status}</td>
       <td>
         ${r.status === "ongoing" 
@@ -479,6 +468,7 @@ async function renderRentalsTable() {
     tbody.appendChild(tr);
   }
 }
+
 
 
 /* ===============================

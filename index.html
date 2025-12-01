@@ -590,46 +590,54 @@ document.getElementById("deleteAllRentalsBtn").onclick = async () => {
    =============================== */
 
 async function returnBike(rentalId, bikeId) {
-  if (!confirm("Kembalikan motor dan tutup transaksi?")) return;
 
-  // Ambil data rental
-  const { data: rental, error: e1 } = await db.from("rentals").select("*").eq("id", rentalId).single();
-  if (e1) return alert("Gagal ambil data rental: " + e1.message);
+  // Ambil data rental + harga motor
+  const { data: rental, error: err1 } = await db
+    .from("rentals")
+    .select("*, bikes(rate_hour)")
+    .eq("id", rentalId)
+    .single();
 
-  const { data: bike, error: e2 } = await db.from("bikes").select("*").eq("id", bikeId).single();
-  if (e2) return alert("Gagal ambil data motor: " + e2.message);
-
-  const now = new Date();           // waktu kembalikan
-  const start = new Date(rental.start_time);
-  const diffHours = Math.ceil((now - start) / (1000 * 60 * 60));
-
-  // Hitung total baru
-  let total = 0;
-  if (diffHours >= 24) {
-    const days = Math.floor(diffHours / 24);
-    const remainingHours = diffHours % 24;
-    total = (days * bike.rate_day) + (remainingHours * bike.rate_hour);
-  } else {
-    total = diffHours * bike.rate_hour;
+  if (err1 || !rental) {
+    console.error(err1);
+    return alert("Gagal mengambil data rental!");
   }
 
-  // Update rental: simpan return_time & total, status jadi "selesai"
-  const { error: e3 } = await db.from("rentals").update({
-    total: total,
-    return_time: now.toISOString(), // baru
-    status: "selesai"
-  }).eq("id", rentalId);
+  const start = new Date(rental.start_time);
+  const end = new Date(); // waktu sekarang = waktu dikembalikan otomatis
 
-  if (e3) return alert("Gagal update rental: " + e3.message);
+  // Hitung durasi otomatis (jam)
+  const diffMs = end - start;
+  const diffHours = Math.ceil(diffMs / (1000 * 60 * 60)); // bulat ke atas
 
-  // Update status motor
-  const { error: e4 } = await db.from("bikes").update({ status: "available" }).eq("id", bikeId);
-  if (e4) return alert("Gagal update motor: " + e4.message);
+  // Hitung total otomatis
+  const rate = rental.bikes.rate_hour;
+  const total = diffHours * rate;
 
-  alert("Pengembalian berhasil.");
-  renderRentalsTable();
+  // Update rental
+  const { error: err2 } = await db
+    .from("rentals")
+    .update({
+      end_time: end.toISOString(),
+      duration: diffHours,
+      total: total,
+      status: "finished"
+    })
+    .eq("id", rentalId);
+
+  if (err2) {
+    console.error(err2);
+    return alert("Gagal update data sewa!");
+  }
+
+  // Motor tersedia kembali
+  await db
+    .from("bikes")
+    .update({ status: "available" })
+    .eq("id", bikeId);
+
+  alert(`Sewa selesai!\nDurasi: ${diffHours} jam\nTotal: Rp ${total.toLocaleString()}`);
 }
-
 
 
 

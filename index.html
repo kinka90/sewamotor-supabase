@@ -88,6 +88,7 @@
         <th>Total</th>
         <th>Mulai</th>
         <th>Selesai</th>
+        <th>Kembalikan</th>
         <th>Status</th>
         <th>Aksi</th>
       </tr>
@@ -380,8 +381,8 @@ async function renderRentalsTable() {
       <td>${totalDisplay}</td>
       <td>${toLocal(r.start_time)}</td>
       <td>${toLocal(r.end_time)}</td>
-      <td>${r.status}</td>
       <td>${toLocal(r.return_time)}</td>
+      <td>${r.status}</td>
       <td>
         ${r.status === "ongoing" 
           ? `<button class="btn" onclick="returnBike('${r.id}','${r.bike_id}')">Selesai</button>` 

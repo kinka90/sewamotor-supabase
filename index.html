@@ -476,11 +476,11 @@ async function returnBike(rentalId, bikeId) {
     total = diffHours * bike.rate_hour;
   }
 
-  // Update rental: status = waktu selesai & total
+  // Update rental: total & waktu selesai lokal, status tetap "selesai"
   const { error: e3 } = await db.from("rentals").update({
-    status: now.toISOString(),   // tampilkan tanggal & jam
     total: total,
-    end_time: now.toISOString()  // update waktu selesai
+    end_time: now.toISOString(),   // tetap simpan di DB sebagai ISO
+    status: "selesai"              // tetap "selesai", jangan diubah ke waktu
   }).eq("id", rentalId);
 
   if (e3) return alert("Gagal update rental: " + e3.message);

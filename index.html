@@ -613,7 +613,6 @@ async function returnBike(rentalId, bikeId) {
   const { error: err2 } = await db
     .from("rentals")
     .update({
-      end_time: end.toISOString(),
       duration: diffHours,
       total: total,
       status: "finished"

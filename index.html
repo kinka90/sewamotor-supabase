@@ -134,6 +134,7 @@
       <th>Mulai</th>
       <th>Selesai</th>
       <th>KTP/KTM</th>
+      <th>Kembalikan</th>
       <th>Status</th>
       <th>Aksi</th>
     </tr>
@@ -504,6 +505,7 @@ async function renderRentalsTable() {
       <td>${toLocal(r.start_time)}</td>
       <td>${toLocal(r.end_time)}</td>
       <td>${r.ktp ? "KTP " : ""}${r.ktm ? "KTM" : ""}</td>
+      <td>${toLocal(r.return_time)}</td>
       <td>${r.status}</td>
       <td>
         ${r.status === "ongoing" 

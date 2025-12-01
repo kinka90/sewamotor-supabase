@@ -181,8 +181,18 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
   // Ambil data motor
   const { data: bike } = await db.from("bikes").select("*").eq("id", bikeId).single();
 
-  // Hitung total harga
-  const total = hours * bike.rate_hour;
+  // Hitung total harga (Logika harian + jam)
+  let total = 0;
+  
+  if (hours >= 24) {
+    const days = Math.floor(hours / 24);      // jumlah hari
+    const remainingHours = hours % 24;        // sisa jam
+  
+    total = (days * bike.rate_day) + (remainingHours * bike.rate_hour);
+  } else {
+    total = hours * bike.rate_hour;
+  }
+
 
   // Tentukan waktu mulai dan selesai
   const start = new Date();
@@ -454,6 +464,7 @@ async function downloadPdfSupabase() {
 </script>
 </body>
 </html>
+
 
 
 

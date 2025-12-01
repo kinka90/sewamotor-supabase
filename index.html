@@ -55,11 +55,45 @@
       <input id="name" required>
 
       <label>No HP</label>
-      <input id="phone" required>
+      <input id="phone" type="tel" pattern="[0-9+ ]*" required />
 
       <label>Durasi (Jam)</label>
       <input id="hours" type="number" value="1" min="1" required>
 
+      <label>Tanggal & Waktu Mulai Sewa</label>
+      <input id="startDateTime" type="datetime-local" required />
+      <p class="muted" id="endDateTimePreview">Selesai sewa: -</p>
+
+      <label>Ketentuan</label>
+      <div class="row">
+        <label style="flex: 1"
+            ><input id="idKtp" type="checkbox" /> Memiliki KTP</label
+            >
+            <label style="flex: 1"
+              ><input id="idStudent" type="checkbox" /> Kartu Mahasiswa</label
+            >
+      </div> 
+      
+      <label>Tarif</label>
+            <select id="rateSelect">
+              <option value="5000|60000">
+                Standar — Rp 5.000 / jam • Rp 60.000 / 24 jam
+              </option>
+              <option value="10000|70000">
+                Premium — Rp 10.000 / jam • Rp 70.000 / 24 jam
+              </option>
+            </select>
+
+            <p class="muted" id="pricePreview">Total: Rp 5.000</p>
+      
+      <div
+        style="
+          display: flex;
+          gap: 8px;
+          margin-top: 12px;
+          justify-content: flex-end;
+        "
+      >
       <button class="btn" style="width:100%;margin-top:12px;">Konfirmasi Sewa</button>
     </form>
 
@@ -437,10 +471,5 @@ async function downloadPdfSupabase() {
 </script>
 </body>
 </html>
-
-
-
-
-
 
 

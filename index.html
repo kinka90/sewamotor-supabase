@@ -374,28 +374,78 @@ async function renderRentalsTable() {
 }
 
 /* ===============================
-    HAPUS SEMUA RIWAYAT SEWA
+    HAPUS SEMUA RIWAYAT SEWA (SAFE)
    =============================== */
 document.getElementById("deleteAllRentalsBtn").onclick = async () => {
-  if (!confirm("Yakin ingin menghapus SEMUA riwayat sewa? Tindakan ini tidak bisa dibatalkan!")) return;
 
-  // Hapus semua data rentals
-  const { error } = await db
-    .from("rentals")
-    .delete()
-    .not("id", "is", null); // delete all
+  // Buat dialog konfirmasi custom
+  const wrapper = document.createElement("div");
+  wrapper.style.position = "fixed";
+  wrapper.style.top = "0";
+  wrapper.style.left = "0";
+  wrapper.style.width = "100%";
+  wrapper.style.height = "100%";
+  wrapper.style.background = "rgba(0,0,0,0.5)";
+  wrapper.style.display = "flex";
+  wrapper.style.alignItems = "center";
+  wrapper.style.justifyContent = "center";
+  wrapper.style.zIndex = "9999";
 
-  if (error) {
-    alert("Gagal menghapus semua riwayat: " + error.message);
-    return;
-  }
+  wrapper.innerHTML = `
+    <div style="
+      background:#fff;padding:20px;border-radius:10px;
+      width:300px;text-align:center;
+      box-shadow:0 0 10px rgba(0,0,0,0.3);
+    ">
+      <h3 style="margin-bottom:10px;">Konfirmasi</h3>
+      <p style="margin-bottom:20px;">
+        Yakin ingin menghapus <b>SEMUA</b> riwayat sewa?<br>
+        Tindakan ini tidak bisa dibatalkan.
+      </p>
 
-  // Reset semua status motor menjadi available
-  await db.from("bikes").update({ status: "available" }).not("id", "is", null);
+      <button id="yesDeleteAll" 
+        style="padding:10px 15px;background:#c20a0a;color:white;border:none;border-radius:5px;margin-right:10px;">
+        Ya, Hapus
+      </button>
 
-  alert("Semua riwayat berhasil dihapus!");
-  renderRentalsTable();
+      <button id="cancelDeleteAll" 
+        style="padding:10px 15px;background:#555;color:white;border:none;border-radius:5px;">
+        Batal
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(wrapper);
+
+  // Jika memilih Batal → tutup popup
+  document.getElementById("cancelDeleteAll").onclick = () => {
+    wrapper.remove();
+  };
+
+  // Jika memilih YA → hapus semua data
+  document.getElementById("yesDeleteAll").onclick = async () => {
+    wrapper.remove(); // tutup popup
+
+    const { error } = await db
+      .from("rentals")
+      .delete()
+      .not("id", "is", null);
+
+    if (error) {
+      alert("Gagal menghapus semua riwayat: " + error.message);
+      return;
+    }
+
+    // Reset semua motor jadi available
+    await db.from("bikes")
+      .update({ status: "available" })
+      .not("id", "is", null);
+
+    alert("Semua riwayat berhasil dihapus!");
+    renderRentalsTable();
+  };
 };
+
 
 
 
@@ -512,6 +562,7 @@ async function downloadPdfSupabase() {
 </script>
 </body>
 </html>
+
 
 
 

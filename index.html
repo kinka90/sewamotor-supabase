@@ -52,13 +52,30 @@
       <input type="hidden" id="bikeId" />
 
       <label>Nama Penyewa</label>
-      <input id="name" required>
+      <input id="name" required />
 
-      <label>No HP</label>
+      <label>No HP Penyewa</label>
       <input id="phone" type="tel" pattern="[0-9+ ]*" required />
 
+      <label>No HP Admin</label>
+      <input id="phoneAdmin" type="tel" pattern="[0-9+ ]*" value="08123456789" required />
+
       <label>Durasi (Jam)</label>
-      <input id="hours" type="number" value="1" min="1" required>
+      <input id="hours" type="number" value="1" min="1" required />
+
+      <label>Pilih Tanggal & Waktu Sewa</label>
+      <input id="rentalDate" type="datetime-local" required />
+
+      <label>Ketentuan</label><br>
+      <input type="checkbox" id="ktp" /> Punya KTP
+      <input type="checkbox" id="ktm" /> Punya Kartu Mahasiswa
+      <br><br>
+
+      <label>Tarif per Jam</label>
+      <input id="rate" type="number" readonly />
+
+      <label>Total</label>
+      <input id="total" type="number" readonly />
 
       <button class="btn" style="width:100%;margin-top:12px;">Konfirmasi Sewa</button>
     </form>
@@ -66,6 +83,7 @@
     <button id="closeModal" class="btn" style="background:#777;width:100%;margin-top:10px;">Batal</button>
   </div>
 </div>
+
 
 <!-- Admin Panel -->
 <div id="adminPanel" class="card" style="margin-top:20px;display:none;">
@@ -178,17 +196,82 @@ loadBikes();
      4. MODAL SEWA
    =============================== */
 
-const rentModal = document.getElementById("rentModal");
-const closeModal = document.getElementById("closeModal");
+const rateInput = document.getElementById("rate");
+const totalInput = document.getElementById("total");
+const hoursInput = document.getElementById("hours");
 
-function openRent(id) {
+async function openRent(id) {
   document.getElementById("bikeId").value = id;
   document.getElementById("modalTitle").innerHTML = "Form Sewa Motor";
+  
+  // Ambil data motor
+  const { data: bike } = await db.from("bikes").select("*").eq("id", id).single();
+  rateInput.value = bike.rate_hour;
+  totalInput.value = bike.rate_hour * parseInt(hoursInput.value);
+
   rentModal.classList.add("show");
+
+  // Update total otomatis saat durasi diubah
+  hoursInput.oninput = () => {
+    const hours = parseInt(hoursInput.value);
+    totalInput.value = bike.rate_hour * hours;
+  };
 }
 
-closeModal.onclick = () => rentModal.classList.remove("show");
+document.getElementById("rentForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
 
+  const bikeId = document.getElementById("bikeId").value;
+  const name = document.getElementById("name").value;
+  const phone = document.getElementById("phone").value;
+  const phoneAdmin = document.getElementById("phoneAdmin").value;
+  const hours = parseInt(document.getElementById("hours").value);
+  const rentalDate = new Date(document.getElementById("rentalDate").value);
+  const hasKTP = document.getElementById("ktp").checked;
+  const hasKTM = document.getElementById("ktm").checked;
+  const total = parseInt(totalInput.value);
+
+  const start = rentalDate;
+  const end = new Date(start.getTime() + hours*60*60*1000);
+
+  // Insert rental ke Supabase
+  const { error } = await db.from("rentals").insert({
+    name,
+    phone,
+    bike_id: bikeId,
+    duration: hours,
+    total,
+    start_time: start.toISOString(),
+    end_time: end.toISOString(),
+    status: "ongoing",
+    ktp: hasKTP,
+    ktm: hasKTM
+  });
+
+  if (error) return alert("Gagal menyewa: " + error.message);
+
+  // Update status motor
+  await db.from("bikes").update({ status: "rented" }).eq("id", bikeId);
+
+  // Kirim struk WA ke admin & penyewa
+  const struk = `
+Sewa Motor Berhasil
+Nama: ${name}
+No HP: ${phone}
+Motor: ${bikeId}
+Durasi: ${hours} jam
+Mulai: ${start.toLocaleString()}
+Selesai: ${end.toLocaleString()}
+Total: Rp ${total.toLocaleString()}
+KTP: ${hasKTP ? "Ya":"Tidak"}, KTM: ${hasKTM ? "Ya":"Tidak"}
+  `;
+  // Nomor harus format internasional (contoh +628xxxx)
+  window.open(`https://wa.me/${phoneAdmin}?text=${encodeURIComponent(struk)}`, "_blank");
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(struk)}`, "_blank");
+
+  alert("Motor berhasil disewa dan struk terkirim via WhatsApp!");
+  rentModal.classList.remove("show");
+});
 
 /* ===============================
      5. SIMPAN SEWA KE SUPABASE

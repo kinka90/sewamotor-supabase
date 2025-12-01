@@ -308,9 +308,9 @@ async function renderRentalsTable() {
       <td>${b ? b.name : '-'}</td>
       <td>${r.duration} jam</td>
       <td>Rp ${r.total}</td>
-      <td>${r.start_time ? r.start_time.replace("T"," ").substring(0,16) : '-'}</td>
-      <td>${r.end_time ? r.end_time.replace("T"," ").substring(0,16) : '-'}</td>
-      <td>${r.status}</td>
+      <td>${toLocal(r.start_time)}</td>
+      <td>${toLocal(r.end_time)}</td>
+      <td>${toLocal(r.status)}</td>
       <td>
         ${r.status === "ongoing" 
           ? `<button class="btn" onclick="returnBike('${r.id}','${r.bike_id}')">Selesai</button>` 
@@ -437,6 +437,7 @@ async function downloadPdfSupabase() {
 </script>
 </body>
 </html>
+
 
 
 

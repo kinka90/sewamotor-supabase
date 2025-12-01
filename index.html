@@ -447,23 +447,53 @@ document.getElementById("deleteAllRentalsBtn").onclick = async () => {
 };
 
 
-
-
 /* ===============================
-   11. KEMBALIKAN MOTOR
+   11. KEMBALIKAN MOTOR (UPDATE)
    =============================== */
 
 async function returnBike(rentalId, bikeId) {
   if (!confirm("Kembalikan motor dan tutup transaksi?")) return;
 
-  const { error: e1 } = await db.from("rentals").update({ status: "done" }).eq("id", rentalId);
-  if (e1) return alert("Gagal update rental: " + e1.message);
+  // Ambil data rental
+  const { data: rental, error: e1 } = await db.from("rentals").select("*").eq("id", rentalId).single();
+  if (e1) return alert("Gagal ambil data rental: " + e1.message);
 
-  const { error: e2 } = await db.from("bikes").update({ status: "available" }).eq("id", bikeId);
-  if (e2) return alert("Gagal update motor: " + e2.message);
+  // Ambil data motor
+  const { data: bike, error: e2 } = await db.from("bikes").select("*").eq("id", bikeId).single();
+  if (e2) return alert("Gagal ambil data motor: " + e2.message);
+
+  const now = new Date();                 // waktu selesai sekarang
+  const start = new Date(rental.start_time);
+  const diffHours = Math.ceil((now - start) / (1000 * 60 * 60)); // hitung durasi total jam
+
+  // Hitung total baru
+  let total = 0;
+  if (diffHours >= 24) {
+    const days = Math.floor(diffHours / 24);
+    const remainingHours = diffHours % 24;
+    total = (days * bike.rate_day) + (remainingHours * bike.rate_hour);
+  } else {
+    total = diffHours * bike.rate_hour;
+  }
+
+  // Update rental: status = waktu selesai & total
+  const { error: e3 } = await db.from("rentals").update({
+    status: now.toISOString(),   // tampilkan tanggal & jam
+    total: total,
+    end_time: now.toISOString()  // update waktu selesai
+  }).eq("id", rentalId);
+
+  if (e3) return alert("Gagal update rental: " + e3.message);
+
+  // Update status motor
+  const { error: e4 } = await db.from("bikes").update({ status: "available" }).eq("id", bikeId);
+  if (e4) return alert("Gagal update motor: " + e4.message);
 
   alert("Pengembalian berhasil.");
+
+  renderRentalsTable(); // refresh tabel
 }
+
 
 /* ===============================
    12. HAPUS TRANSAKSI (SUPABASE)
@@ -562,7 +592,6 @@ async function downloadPdfSupabase() {
 </script>
 </body>
 </html>
-
 
 
 

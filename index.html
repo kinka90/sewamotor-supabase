@@ -340,7 +340,6 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
 /* ===============================
      5. SIMPAN SEWA KE SUPABASE
    =============================== */
-
   document.getElementById("rentForm").addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -348,31 +347,31 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
     const name = document.getElementById("name").value;
     const phone = document.getElementById("phone").value;
     const hours = parseInt(document.getElementById("hours").value);
+    const rentalDate = new Date(document.getElementById("rentalDate").value);
+    const hasKTP = document.getElementById("ktp").checked;
+    const hasKTM = document.getElementById("ktm").checked;
 
     // Ambil data motor
     const { data: bike } = await db.from("bikes").select("*").eq("id", bikeId).single();
 
-    // Hitung total harga (Logika harian + jam)
+    // Hitung total
     function hitungTotal(hours, rateHour, rateDay) {
-    if (hours >= 24) {
-      const days = Math.floor(hours / 24);
-      const sisaJam = hours % 24;
-      return (days * rateDay) + (sisaJam * rateHour);
-    }
-    return hours * rateHour;
+      if (hours >= 24) {
+        const days = Math.floor(hours / 24);
+        const sisaJam = hours % 24;
+        return (days * rateDay) + (sisaJam * rateHour);
+      }
+      return hours * rateHour;
     }
 
     const total = hitungTotal(hours, bike.rate_hour, bike.rate_day);
 
+    // Waktu mulai → sesuai input user
+    const start = rentalDate;
+    const end = new Date(start.getTime() + hours * 60 * 60 * 1000);
 
-
-    // Tentukan waktu mulai dan selesai
-    const start = new Date();
-    const end = new Date();
-    end.setHours(end.getHours() + hours);
-
-    // Insert sewa
-    const { error: rentErr } = await db.from("rentals").insert({
+    // Insert satu kali saja
+    const { error } = await db.from("rentals").insert({
       name,
       phone,
       bike_id: bikeId,
@@ -380,15 +379,15 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
       total,
       start_time: start.toISOString(),
       end_time: end.toISOString(),
-      status: "ongoing"
+      status: "ongoing",
+      ktp: hasKTP,
+      ktm: hasKTM
     });
 
-    if (rentErr) {
-    alert("Gagal menyewa: " + rentErr.message);
-    console.log(rentErr);
-    return;
-  }
-
+    if (error) {
+      alert("Gagal menyewa: " + error.message);
+      return;
+    }
 
     // Update status motor
     await db.from("bikes").update({ status: "rented" }).eq("id", bikeId);
@@ -396,6 +395,7 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
     alert("Motor berhasil disewa!");
     rentModal.classList.remove("show");
   });
+
 
 
 /* ===============================

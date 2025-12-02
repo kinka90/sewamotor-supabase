@@ -379,7 +379,6 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
     total,
     start_time: start.toISOString(),
     end_time: end.toISOString(),
-    returned_time: null,
     status: "ongoing",
     ktp: hasKTP,
     ktm: hasKTM
@@ -396,6 +395,7 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
   alert("Motor berhasil disewa!");
   rentModal.classList.remove("show");
 });
+
 
 
 /* ===============================

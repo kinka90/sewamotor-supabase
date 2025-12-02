@@ -112,6 +112,44 @@
   <h3>Admin Panel</h3>
   <button id="addBikeBtn" class="btn"><i class="fa fa-plus"></i> Tambah Motor</button>
 
+  <!-- Modal Tambah/Edit Motor -->
+<div id="bikeModal" class="modal">
+  <div class="dialog">
+    <h3 id="bikeModalTitle">Tambah Motor</h3>
+
+    <form id="bikeForm" style="display:flex;flex-direction:column;gap:10px;">
+      <input type="hidden" id="bikeEditId">
+
+      <div>
+        <label>Nama Motor</label>
+        <input id="bikeName" required style="width:100%;">
+      </div>
+
+      <div>
+        <label>Tarif per Jam</label>
+        <input id="bikeRateHour" type="number" required style="width:100%;">
+      </div>
+
+      <div>
+        <label>Tarif per Hari</label>
+        <input id="bikeRateDay" type="number" required style="width:100%;">
+      </div>
+
+      <div>
+        <label>Upload Gambar Motor</label>
+        <input id="bikeImage" type="file" accept="image/*">
+      </div>
+
+      <button class="btn" style="width:100%;margin-top:10px;">Simpan</button>
+    </form>
+
+    <button onclick="closeBikeModal()" class="btn" style="background:#777;color:white;margin-top:10px;">
+      Batal
+    </button>
+  </div>
+</div>
+
+
   <h4>Riwayat Sewa</h4>
 
   <button id="deleteAllRentalsBtn" class="btn" 

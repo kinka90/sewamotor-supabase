@@ -110,12 +110,9 @@
 <!-- Admin Panel -->
 <div id="adminPanel" class="card" style="margin-top:20px;display:none;">
   <h3>Admin Panel</h3>
-  <button id="bikeModal" class="btn"><i class="fa fa-plus"></i> Tambah Motor</button>
+  <button id="openBikeModalBtn" class="btn"><i class="fa fa-plus"></i> Tambah Motor</button>
 
-  <!-- Modal Tambah/Edit Motor -->
 <div id="bikeModal" class="modal">
-  <div class="dialog">
-    <h3 id="bikeModalTitle">Tambah Motor</h3>
 
     <form id="bikeForm" style="display:flex;flex-direction:column;gap:10px;">
       <input type="hidden" id="bikeEditId">
@@ -481,54 +478,84 @@ function toLocal(dateInput) {
    9. TAMBAH MOTOR (ADMIN) - simple prompt
    =============================== */
 
+const bikeModal = document.getElementById("bikeModal");
+const openBikeModalBtn = document.getElementById("openBikeModalBtn");
+const bikeForm = document.getElementById("bikeForm");
 
-// simpan motor dari modal
-document.getElementById("bikeForm").addEventListener("submit", async (e) => {
+// Buka modal tambah motor
+openBikeModalBtn.onclick = () => {
+  document.getElementById("bikeModalTitle").innerText = "Tambah Motor";
+  document.getElementById("bikeEditId").value = "";
+  bikeForm.reset();
+  bikeModal.classList.add("show");
+};
+
+// Tutup modal
+function closeBikeModal() {
+  bikeModal.classList.remove("show");
+}
+
+// Submit tambah / edit motor
+bikeForm.onsubmit = async (e) => {
   e.preventDefault();
 
   const id = document.getElementById("bikeEditId").value;
   const name = document.getElementById("bikeName").value;
-  const rateHour = document.getElementById("bikeRateHour").value;
-  const rateDay = document.getElementById("bikeRateDay").value;
+  const rate_hour = document.getElementById("bikeRateHour").value;
+  const rate_day = document.getElementById("bikeRateDay").value;
   const file = document.getElementById("bikeImage").files[0];
 
-  let imageURL = null;
+  let image_url = null;
 
-  if (file) imageURL = await uploadImage(file);
+  // Jika upload gambar
+  if (file) {
+    const fileName = Date.now() + "_" + file.name;
 
-  if (id) {
-    // EDIT MOTOR
-    const updateData = {
-      name,
-      rate_hour: rateHour,
-      rate_day: rateDay,
-    };
-    if (imageURL) updateData.image_url = imageURL;
+    await db.storage.from("motor_images").upload(fileName, file);
 
-    await db.from("bikes").update(updateData).eq("id", id);
-    alert("Motor berhasil diperbarui!");
+    const { data: urlData } = db.storage
+      .from("motor_images")
+      .getPublicUrl(fileName);
 
-  } else {
-    // TAMBAH MOTOR
-    await db.from("bikes").insert({
-      name,
-      rate_hour: rateHour,
-      rate_day: rateDay,
-      status: "available",
-      image_url: imageURL
-    });
-    alert("Motor berhasil ditambahkan!");
+    image_url = urlData.publicUrl;
   }
 
-  bikeModal.classList.remove("show");
+  if (id === "") {
+    // ==== TAMBAH BARU ====
+    await db.from("bikes").insert({
+      name,
+      rate_hour,
+      rate_day,
+      image_url,
+      status: "available"
+    });
+
+    alert("Motor berhasil ditambahkan!");
+  } else {
+    // ==== EDIT MOTOR ====
+    await db.from("bikes").update({
+      name,
+      rate_hour,
+      rate_day,
+      ...(image_url && { image_url })
+    }).eq("id", id);
+
+    alert("Motor berhasil diupdate!");
+  }
+
+  closeBikeModal();
   loadBikes();
-});
+};
+
+/* ===========================
+     FUNGSI EDIT MOTOR
+   =========================== */
 
 async function editBike(id) {
   const { data } = await db.from("bikes").select("*").eq("id", id).single();
 
   document.getElementById("bikeModalTitle").innerText = "Edit Motor";
-  document.getElementById("bikeEditId").value = data.id;
+  document.getElementById("bikeEditId").value = id;
   document.getElementById("bikeName").value = data.name;
   document.getElementById("bikeRateHour").value = data.rate_hour;
   document.getElementById("bikeRateDay").value = data.rate_day;
@@ -536,8 +563,11 @@ async function editBike(id) {
   bikeModal.classList.add("show");
 }
 
+/* ===========================
+     HAPUS MOTOR
+   =========================== */
 async function deleteBike(id) {
-  if (!confirm("Hapus motor ini?")) return;
+  if (!confirm("Yakin hapus motor?")) return;
 
   await db.from("bikes").delete().eq("id", id);
   loadBikes();

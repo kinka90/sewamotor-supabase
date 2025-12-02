@@ -637,7 +637,7 @@ async function returnBike(rentalId, bikeId) {
     .update({
       duration: diffHours,
       total: total,
-      return_time: return_time.toISOString(), // ⬅️ TAMBAHKAN INI
+      return_time: end.toISOString(), // ⬅️ TAMBAHKAN INI
       status: "finished"
     })
     .eq("id", rentalId);

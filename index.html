@@ -234,10 +234,31 @@ async function openRent(id) {
   rentModal.classList.add("show");
 
   // Update total otomatis saat durasi diubah
+  function hitungTotal(hours, rateHour, rateDay) {
+  if (hours >= 24) {
+    const days = Math.floor(hours / 24);
+    const sisaJam = hours % 24;
+    return (days * rateDay) + (sisaJam * rateHour);
+  } 
+  return hours * rateHour;
+  }
+
+  // Hitung total saat modal dibuka
+  totalInput.value = hitungTotal(
+    parseInt(hoursInput.value),
+    bike.rate_hour,
+    bike.rate_day
+  );
+
+  // Update saat user ubah durasi
   hoursInput.oninput = () => {
-    const hours = parseInt(hoursInput.value);
-    totalInput.value = bike.rate_hour * hours;
+    totalInput.value = hitungTotal(
+      parseInt(hoursInput.value),
+      bike.rate_hour,
+      bike.rate_day
+    );
   };
+
 }
 
 document.getElementById("rentForm").addEventListener("submit", async (e) => {
@@ -332,16 +353,17 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
   const { data: bike } = await db.from("bikes").select("*").eq("id", bikeId).single();
 
   // Hitung total harga (Logika harian + jam)
-  let total = 0;
-
+  function hitungTotal(hours, rateHour, rateDay) {
   if (hours >= 24) {
-    const days = Math.floor(hours / 24);      // jumlah hari
-    const remainingHours = hours % 24;        // sisa jam
-
-    total = (days * bike.rate_day) + (remainingHours * bike.rate_hour);
-  } else {
-    total = hours * bike.rate_hour;
+    const days = Math.floor(hours / 24);
+    const sisaJam = hours % 24;
+    return (days * rateDay) + (sisaJam * rateHour);
   }
+  return hours * rateHour;
+  }
+
+  const total = hitungTotal(hours, bike.rate_hour, bike.rate_day);
+
 
 
   // Tentukan waktu mulai dan selesai

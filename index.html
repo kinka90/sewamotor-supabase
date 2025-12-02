@@ -111,6 +111,26 @@
 <div id="adminPanel" class="card" style="margin-top:20px;display:none;">
   <h3>Admin Panel</h3>
   <button id="addBikeBtn" class="btn"><i class="fa fa-plus"></i> Tambah Motor</button>
+  
+  <div id="addBikeModal" class="modal">
+  <div class="dialog">
+    <h3>Tambah Motor</h3>
+
+    <input id="bikeName" placeholder="Nama motor" style="width:100%;margin-bottom:8px;">
+    <input id="bikeRate" type="number" placeholder="Tarif per jam" style="width:100%;margin-bottom:8px;">
+    <input id="bikeRateDay" type="number" placeholder="Tarif per hari" style="width:100%;margin-bottom:8px;">
+    
+    <label>Upload Gambar</label>
+    <input id="bikeImage" type="file" accept="image/*" style="width:100%;margin-bottom:8px;">
+    
+    <label>Atau URL Gambar</label>
+    <input id="bikeImageURL" placeholder="https://..." style="width:100%;margin-bottom:8px;">
+
+    <button id="saveBikeBtn" class="btn" style="width:100%;">Simpan</button>
+    <button onclick="closeAddBike()" class="btn" style="background:#777;width:100%;margin-top:6px;">Batal</button>
+  </div>
+</div>
+
 
   <h4>Riwayat Sewa</h4>
 
@@ -182,7 +202,11 @@ async function loadBikes() {
     const div = document.createElement("div");
     div.className = "card";
     div.innerHTML = `
-      <div class="motor-img">${b.emoji}</div>
+      <div class="motor-img">
+        <img src="${b.image_url || 'https://via.placeholder.com/200'}" 
+            style="width:100%;height:100%;object-fit:cover;border-radius:8px;">
+      </div>
+
       <h3>${b.name}</h3>
       <p>Rp ${b.rate_hour}/jam</p>
       <span class="status ${b.status === 'available' ? 'available':'rented'}">
@@ -444,25 +468,66 @@ function toLocal(dateInput) {
    9. TAMBAH MOTOR (ADMIN) - simple prompt
    =============================== */
 
-document.getElementById("addBikeBtn").addEventListener("click", async () => {
-  const name = prompt("Nama motor:");
-  if (!name) return alert("Batal: nama kosong.");
+document.getElementById("addBikeBtn").onclick = () => {
+  document.getElementById("addBikeModal").classList.add("show");
+};
+function closeAddBike() {
+  document.getElementById("addBikeModal").classList.remove("show");
+}
 
-  const rateHour = parseInt(prompt("Tarif per jam (angka):", "5000")) || 0;
-  const rateDay = parseInt(prompt("Tarif per 24 jam (angka):", "60000")) || 0;
-  const emoji = prompt("Emoji/ikon (opsional):", "🛵") || "🛵";
+async function uploadImage(file, name) {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${name}-${Date.now()}.${fileExt}`;
 
-  const { error } = await db.from("bikes").insert([{
+  const { data, error } = await db.storage
+    .from("motor-images")
+    .upload(fileName, file);
+
+  if (error) {
+    alert("Upload gagal: " + error.message);
+    return null;
+  }
+
+  const { data: urlData } = db.storage
+    .from("motor-images")
+    .getPublicUrl(fileName);
+
+  return urlData.publicUrl;
+}
+
+document.getElementById("saveBikeBtn").onclick = async () => {
+  const name = document.getElementById("bikeName").value;
+  const rateHour = parseInt(document.getElementById("bikeRate").value);
+  const rateDay = parseInt(document.getElementById("bikeRateDay").value);
+  const imageFile = document.getElementById("bikeImage").files[0];
+  const imageURLInput = document.getElementById("bikeImageURL").value;
+
+  let imageUrl = "null";
+
+  if (imageFile) {
+    imageUrl = await uploadImage(imageFile, name);
+    if (!imageUrl) return; // gagal upload
+  } else if (imageURLInput) {
+    imageUrl = imageURLInput;
+  }
+
+  const { error } = await db.from("bikes").insert({
     name,
     rate_hour: rateHour,
     rate_day: rateDay,
     status: "available",
-    emoji
-  }]);
+    image_url: imageUrl
+  });
 
-  if (error) return alert("Gagal tambah motor: " + error.message);
-  alert("Motor ditambahkan.");
-});
+  if (error) {
+    alert("Gagal menambah motor: " + error.message);
+    return;
+  }
+
+  alert("Motor berhasil ditambahkan!");
+  closeAddBike();
+  loadBikes();
+};
 
 /* ===============================
    10. RENDER RENTALS TABLE (dengan nama motor)
@@ -665,32 +730,41 @@ async function deleteRentalSupabase(rentalId, bikeId) {
    =============================== */
 
 async function deleteBike(id) {
+  const { data } = await db.from("bikes").select("*").eq("id", id).single();
+
   if (!confirm("Hapus motor ini?")) return;
-  const { error } = await db.from("bikes").delete().eq("id", id);
-  if (error) return alert("Gagal hapus motor: " + error.message);
-  alert("Motor dihapus.");
+
+  // Hapus file gambar jika dari storage
+  if (data.image_url && data.image_url.includes("motor-images")) {
+    const path = data.image_url.split("/").pop();
+    await db.storage.from("motor-images").remove([path]);
+  }
+
+  await db.from("bikes").delete().eq("id", id);
+  loadBikes();
 }
+
 
 async function editBike(id) {
   const { data: b } = await db.from("bikes").select("*").eq("id", id).single();
-  if (!b) return alert("Motor tidak ditemukan.");
 
   const newName = prompt("Nama motor:", b.name);
-  if (newName === null) return;
-  const newHour = parseInt(prompt("Tarif per jam:", b.rate_hour)) || b.rate_hour;
-  const newDay = parseInt(prompt("Tarif per 24 jam:", b.rate_day)) || b.rate_day;
-  const newEmoji = prompt("Emoji:", b.emoji) || b.emoji;
+  const newRate = prompt("Tarif/jam:", b.rate_hour);
+  const newImageURL = prompt("URL gambar baru (kosongkan jika tidak ganti):", b.image_url);
 
-  const { error } = await db.from("bikes").update({
-    name: newName,
-    rate_hour: newHour,
-    rate_day: newDay,
-    emoji: newEmoji
-  }).eq("id", id);
+  let uploadedURL = b.image_url;
 
-  if (error) return alert("Gagal update motor: " + error.message);
-  alert("Motor diperbarui.");
+  if (newImageURL && newImageURL !== b.image_url) {
+    uploadedURL = newImageURL;
+  }
+
+  await db.from("bikes")
+    .update({ name: newName, rate_hour: newRate, image_url: uploadedURL })
+    .eq("id", id);
+
+  loadBikes();
 }
+
 
 /* ===============================
    14. INITIAL REFRESH

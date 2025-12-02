@@ -513,7 +513,7 @@ async function renderRentalsTable() {
       <td>${toLocal(r.start_time)}</td>
       <td>${toLocal(r.end_time)}</td>
       <td>${r.ktp ? "KTP " : ""}${r.ktm ? "KTM" : ""}</td>
-      <td>${r.return_time ? new Date(r.return_time).toLocal() : "-"}</td>
+      <td>${r.return_time ? new Date(r.return_time).toLocaleString() : "-"}</td>
       <td>${r.status}</td>
       <td>
         ${r.status === "ongoing" 
@@ -640,7 +640,7 @@ async function returnBike(rentalId, bikeId) {
       duration: diffHours,
       total: total,
       status: "finished",
-      return_time: end.toLocal()  // disimpan dalam ISO
+      return_time: end.toISOString()  // disimpan dalam ISO
     })
     .eq("id", rentalId);
 

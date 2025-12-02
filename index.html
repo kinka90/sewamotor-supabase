@@ -640,7 +640,7 @@ async function returnBike(rentalId, bikeId) {
       duration: diffHours,
       total: total,
       status: "finished",
-      return_time: end.toLocal()  
+      return_time: end.toLocaleString()  // disimpan dalam ISO
     })
     .eq("id", rentalId);
 

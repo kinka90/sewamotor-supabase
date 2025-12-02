@@ -623,7 +623,7 @@ async function returnBike(rentalId, bikeId) {
   }
 
   const start = new Date(rental.start_time);
-  const end = new Date(); // waktu dikembalikan otomatis (sekarang)
+  const end = new Date();  // waktu dikembalikan otomatis
 
   // Hitung durasi otomatis (jam)
   const diffMs = end - start;
@@ -633,14 +633,14 @@ async function returnBike(rentalId, bikeId) {
   const rate = rental.bikes.rate_hour;
   const total = diffHours * rate;
 
-  // Update rental lengkap + return_time
+  // Update rental lengkap + return_time dalam format ISO
   const { error: err2 } = await db
     .from("rentals")
     .update({
       duration: diffHours,
       total: total,
-      status: "finished",        // atau "returned" bebas pilih
-      return_time: end.toISOString()
+      status: "finished",
+      return_time: end.toISOString()  // disimpan dalam ISO
     })
     .eq("id", rentalId);
 
@@ -655,12 +655,18 @@ async function returnBike(rentalId, bikeId) {
     .update({ status: "available" })
     .eq("id", bikeId);
 
-  alert(`Sewa selesai!\nDurasi: ${diffHours} jam\nTotal: Rp ${total.toLocaleString()}`);
+  alert(
+    `Sewa selesai!\n` +
+    `Mulai   : ${toLocal(start)}\n` +
+    `Kembali : ${toLocal(end)}\n` +
+    `Durasi  : ${diffHours} jam\n` +
+    `Total   : Rp ${total.toLocaleString()}`
+  );
 
-  // Refresh tabel
   renderRentalsTable();
   loadBikes();
 }
+
 
 
 

@@ -110,7 +110,7 @@
 <!-- Admin Panel -->
 <div id="adminPanel" class="card" style="margin-top:20px;display:none;">
   <h3>Admin Panel</h3>
-  <button id="addBikeBtn" class="btn"><i class="fa fa-plus"></i> Tambah Motor</button>
+  <button id="bikeModal" class="btn"><i class="fa fa-plus"></i> Tambah Motor</button>
 
   <!-- Modal Tambah/Edit Motor -->
 <div id="bikeModal" class="modal">
@@ -148,7 +148,6 @@
     </button>
   </div>
 </div>
-
 
   <h4>Riwayat Sewa</h4>
 
@@ -220,10 +219,9 @@ data.forEach(b => {
   const div = document.createElement("div");
   div.className = "card";
   div.innerHTML = `
-    <div class="motor-img">
-      <img src="${b.image_url}" alt="${b.name}"
-        style="width:100%;height:100%;object-fit:cover;border-radius:8px;">
-    </div>
+    <img src="${b.image_url || 'https://via.placeholder.com/300'}"
+     style="width:100%;height:100%;object-fit:cover;border-radius:8px;">
+
 
     <h3>${b.name}</h3>
     <p>Rp ${b.rate_hour}/jam</p>
@@ -483,25 +481,69 @@ function toLocal(dateInput) {
    9. TAMBAH MOTOR (ADMIN) - simple prompt
    =============================== */
 
-document.getElementById("addBikeBtn").addEventListener("click", async () => {
-  const name = prompt("Nama motor:");
-  if (!name) return alert("Batal: nama kosong.");
 
-  const rateHour = parseInt(prompt("Tarif per jam (angka):", "5000")) || 0;
-  const rateDay = parseInt(prompt("Tarif per 24 jam (angka):", "60000")) || 0;
-  const image_url = prompt("URL gambar motor (opsional):", "") || "";
+// simpan motor dari modal
+document.getElementById("bikeForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-  const { error } = await db.from("bikes").insert([{
-    name,
-    rate_hour: rateHour,
-    rate_day: rateDay,
-    status: "available",
-    image_url: document.getElementById("imageUrl").value
-  }]);
+  const id = document.getElementById("bikeEditId").value;
+  const name = document.getElementById("bikeName").value;
+  const rateHour = document.getElementById("bikeRateHour").value;
+  const rateDay = document.getElementById("bikeRateDay").value;
+  const file = document.getElementById("bikeImage").files[0];
 
-  if (error) return alert("Gagal tambah motor: " + error.message);
-  alert("Motor ditambahkan.");
+  let imageURL = null;
+
+  if (file) imageURL = await uploadImage(file);
+
+  if (id) {
+    // EDIT MOTOR
+    const updateData = {
+      name,
+      rate_hour: rateHour,
+      rate_day: rateDay,
+    };
+    if (imageURL) updateData.image_url = imageURL;
+
+    await db.from("bikes").update(updateData).eq("id", id);
+    alert("Motor berhasil diperbarui!");
+
+  } else {
+    // TAMBAH MOTOR
+    await db.from("bikes").insert({
+      name,
+      rate_hour: rateHour,
+      rate_day: rateDay,
+      status: "available",
+      image_url: imageURL
+    });
+    alert("Motor berhasil ditambahkan!");
+  }
+
+  bikeModal.classList.remove("show");
+  loadBikes();
 });
+
+async function editBike(id) {
+  const { data } = await db.from("bikes").select("*").eq("id", id).single();
+
+  document.getElementById("bikeModalTitle").innerText = "Edit Motor";
+  document.getElementById("bikeEditId").value = data.id;
+  document.getElementById("bikeName").value = data.name;
+  document.getElementById("bikeRateHour").value = data.rate_hour;
+  document.getElementById("bikeRateDay").value = data.rate_day;
+
+  bikeModal.classList.add("show");
+}
+
+async function deleteBike(id) {
+  if (!confirm("Hapus motor ini?")) return;
+
+  await db.from("bikes").delete().eq("id", id);
+  loadBikes();
+}
+
+
 
 /* ===============================
    10. RENDER RENTALS TABLE (dengan nama motor)

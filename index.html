@@ -340,62 +340,62 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
 /* ===============================
      5. SIMPAN SEWA KE SUPABASE
    =============================== */
+
   document.getElementById("rentForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const bikeId = document.getElementById("bikeId").value;
-  const name = document.getElementById("name").value;
-  const phone = document.getElementById("phone").value;
-  const hours = parseInt(document.getElementById("hours").value);
-  const rentalDate = new Date(document.getElementById("rentalDate").value);
-  const hasKTP = document.getElementById("ktp").checked;
-  const hasKTM = document.getElementById("ktm").checked;
+    const bikeId = document.getElementById("bikeId").value;
+    const name = document.getElementById("name").value;
+    const phone = document.getElementById("phone").value;
+    const hours = parseInt(document.getElementById("hours").value);
 
-  // Ambil data motor
-  const { data: bike } = await db.from("bikes").select("*").eq("id", bikeId).single();
+    // Ambil data motor
+    const { data: bike } = await db.from("bikes").select("*").eq("id", bikeId).single();
 
-  // Hitung total
-  function hitungTotal(hours, rateHour, rateDay) {
+    // Hitung total harga (Logika harian + jam)
+    function hitungTotal(hours, rateHour, rateDay) {
     if (hours >= 24) {
       const days = Math.floor(hours / 24);
       const sisaJam = hours % 24;
       return (days * rateDay) + (sisaJam * rateHour);
     }
     return hours * rateHour;
-  }
+    }
 
-  const total = hitungTotal(hours, bike.rate_hour, bike.rate_day);
+    const total = hitungTotal(hours, bike.rate_hour, bike.rate_day);
 
-  // Waktu mulai → sesuai input user
-  const start = rentalDate;
-  const end = new Date(start.getTime() + hours * 60 * 60 * 1000);
 
-  // Insert satu kali saja
-  const { error } = await db.from("rentals").insert({
-    name,
-    phone,
-    bike_id: bikeId,
-    duration: hours,
-    total,
-    start_time: start.toISOString(),
-    end_time: end.toISOString(),
-    status: "ongoing",
-    ktp: hasKTP,
-    ktm: hasKTM
-  });
 
-  if (error) {
-    alert("Gagal menyewa: " + error.message);
+    // Tentukan waktu mulai dan selesai
+    const start = new Date();
+    const end = new Date();
+    end.setHours(end.getHours() + hours);
+
+    // Insert sewa
+    const { error: rentErr } = await db.from("rentals").insert({
+      name,
+      phone,
+      bike_id: bikeId,
+      duration: hours,
+      total,
+      start_time: start.toISOString(),
+      end_time: end.toISOString(),
+      status: "ongoing"
+    });
+
+    if (rentErr) {
+    alert("Gagal menyewa: " + rentErr.message);
+    console.log(rentErr);
     return;
   }
 
-  // Update status motor
-  await db.from("bikes").update({ status: "rented" }).eq("id", bikeId);
 
-  alert("Motor berhasil disewa!");
-  rentModal.classList.remove("show");
-});
+    // Update status motor
+    await db.from("bikes").update({ status: "rented" }).eq("id", bikeId);
 
+    alert("Motor berhasil disewa!");
+    rentModal.classList.remove("show");
+  });
 
 
 /* ===============================

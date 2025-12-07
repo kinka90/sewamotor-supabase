@@ -731,18 +731,20 @@ async function deleteRentalSupabase(rentalId, bikeId) {
    =============================== */
 
 async function deleteBike(id) {
-  const { data } = await db.from("bikes").select("*").eq("id", id).single();
+  if (!confirm("Yakin ingin menghapus motor ini?")) return;
 
-  if (!confirm("Hapus motor ini?")) return;
+  const { error } = await db
+    .from("bikes")
+    .delete()
+    .eq("id", id);
 
-  // Hapus file gambar jika dari storage
-  if (data.image_url && data.image_url.includes("motor-images")) {
-    const path = data.image_url.split("/").pop();
-    await db.storage.from("motor-images").remove([path]);
+  if (error) {
+    alert("Gagal menghapus motor: " + error.message);
+    return;
   }
 
-  await db.from("bikes").delete().eq("id", id);
-  loadBikes();
+  alert("Motor berhasil dihapus!");
+  loadBikes(); // refresh card motor
 }
 
 

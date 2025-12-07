@@ -496,56 +496,39 @@ async function uploadImage(file, name) {
 }
 
 document.getElementById("saveBikeBtn").onclick = async () => {
-
   const name = document.getElementById("bikeName").value;
-  const rateHour = document.getElementById("bikeRate").value;
-  const rateDay = document.getElementById("bikeRateDay").value;
-  const file = document.getElementById("bikeImage").files[0];
-  const imageURL = document.getElementById("bikeImageURL").value;
+  const rateHour = parseInt(document.getElementById("bikeRate").value);
+  const rateDay = parseInt(document.getElementById("bikeRateDay").value);
+  const imageFile = document.getElementById("bikeImage").files[0];
+  const imageURLInput = document.getElementById("bikeImageURL").value;
 
-  let finalImageURL = imageURL;
+  let imageUrl = "";
 
-  // Jika user upload file
-  if (file) {
-    const fileName = `${Date.now()}-${file.name}`;
-
-    // Upload ke supabase storage
-    const { data, error: uploadError } = await db.storage
-      .from("motor-images")
-      .upload(fileName, file, { upsert: true });
-
-    if (uploadError) {
-      alert("Upload gambar gagal: " + uploadError.message);
-      return;
-    }
-
-    // Ambil URL PUBLIC dari gambar
-    const { data: urlData } = db.storage
-      .from("motor-images")
-      .getPublicUrl(fileName);
-
-    finalImageURL = urlData.publicUrl;
+  if (imageFile) {
+    imageUrl = await uploadImage(imageFile, name);
+    if (!imageUrl) return; // gagal upload
+  } else if (imageURLInput) {
+    imageUrl = imageURLInput;
   }
 
-  // SIMPAN MOTOR KE DATABASE
   const { error } = await db.from("bikes").insert({
     name,
     rate_hour: rateHour,
     rate_day: rateDay,
-    image_url: finalImageURL,
-    status: "available"
+    status: "available",
+    image_url: imageUrl
   });
 
   if (error) {
-    alert("Gagal menyimpan motor: " + error.message);
+    alert("Gagal menambah motor: " + error.message);
     return;
   }
 
   alert("Motor berhasil ditambahkan!");
-  document.getElementById("addBikeModal").classList.remove("show");
+  closeAddBike();
   loadBikes();
+  
 };
-
 
 /* ===============================
    10. RENDER RENTALS TABLE (dengan nama motor)

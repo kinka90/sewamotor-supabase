@@ -213,8 +213,8 @@ async function loadBikes() {
       if (active) {
         rentInfo = `
           <p style="font-size:12px; margin-top:6px; color:#b90909;">
-            Mulai: ${new Date(active.start_time).toLocal()}<br>
-            Selesai: ${new Date(active.end_time).toLocal()}
+            Mulai: ${new Date(active.start_time).toLocaleString()}<br>
+            Selesai: ${new Date(active.end_time).toLocaleString()}
           </p>
         `;
       }

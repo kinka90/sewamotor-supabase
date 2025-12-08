@@ -440,12 +440,18 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
    =============================== */
 
 const adminPanel = document.getElementById("adminPanel");
-document.getElementById("adminBtn").onclick = () => {
-  const visible = adminPanel.style.display === "none";
-  adminPanel.style.display = visible ? "block" : "none";
+adminPanel.style.display = "none"; // default: nonaktif
 
-  if (visible) loadBikes(); // hanya panggil saat admin ON
+document.getElementById("adminBtn").onclick = () => {
+  const isVisible = adminPanel.style.display === "block";
+
+  // toggle
+  adminPanel.style.display = isVisible ? "none" : "block";
+
+  // render ulang card motor setiap ON & OFF
+  loadBikes();
 };
+
 
 
 

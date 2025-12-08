@@ -119,6 +119,8 @@
     <input id="bikeName" placeholder="Nama motor" style="width:100%;margin-bottom:8px;">
     <input id="bikeRate" type="number" placeholder="Tarif per jam" style="width:100%;margin-bottom:8px;">
     <input id="bikeRateDay" type="number" placeholder="Tarif per hari" style="width:100%;margin-bottom:8px;">
+    <textarea id="bikeDetail" placeholder="Detail motor" style="width:100%;height:70px;margin-bottom:8px;"></textarea>
+
     
     <label>Upload URL Gambar Dari Supabase</label>
     <input id="bikeImageURL" placeholder="https://..." style="width:100%;margin-bottom:8px;">
@@ -246,6 +248,8 @@ async function loadBikes() {
 
       <div class="actions">
         <button class="btn" onclick="openRent('${b.id}')" ${b.status !== "available" ? "disabled":""}>Sewa</button>
+        <button class="btn" style="background:#0066cc;color:white;" onclick="showDetail('${b.id}')">Detail</button>
+
 
         ${
           adminPanel.style.display === "block"
@@ -495,6 +499,7 @@ document.getElementById("saveBikeBtn").onclick = async () => {
   const name = document.getElementById("bikeName").value;
   const rateHour = parseInt(document.getElementById("bikeRate").value);
   const rateDay = parseInt(document.getElementById("bikeRateDay").value);
+  const detail = document.getElementById("bikeDetail").value;
   const imageURLInput = document.getElementById("bikeImageURL").value;
 
   if (!imageURLInput) {
@@ -507,7 +512,8 @@ document.getElementById("saveBikeBtn").onclick = async () => {
     rate_hour: rateHour,
     rate_day: rateDay,
     status: "available",
-    image_url: imageURLInput
+    image_url: imageURLInput,
+    detail: detail
   });
 
   if (error) {
@@ -808,6 +814,18 @@ async function downloadPdfSupabase() {
 }
 
 </script>
+
+<div id="detailModal" class="modal">
+  <div class="dialog">
+    <h3 id="detailTitle"></h3>
+    <p id="detailText" style="font-size:14px;margin-top:10px;"></p>
+
+    <button class="btn" onclick="closeDetail()" style="width:100%;margin-top:10px;background:#777;">
+      Tutup
+    </button>
+  </div>
+</div>
+
 </body>
 </html>
 

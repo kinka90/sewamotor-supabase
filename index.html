@@ -175,13 +175,19 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 db.channel("bikes-change")
   .on("postgres_changes", { event: "*", schema: "public", table: "bikes" },
-    () => renderRentalsTable()
+    () => {
+      loadBikes();        // <-- FIX
+      renderRentalsTable();
+    }
   )
   .subscribe();
 
 db.channel("rentals-change")
   .on("postgres_changes", { event: "*", schema: "public", table: "rentals" },
-    () => renderRentalsTable()
+    () => {
+      loadBikes();        // <-- FIX
+      renderRentalsTable();
+    }
   )
   .subscribe();
 
@@ -395,9 +401,12 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
 
 const adminPanel = document.getElementById("adminPanel");
 document.getElementById("adminBtn").onclick = () => {
-  adminPanel.style.display = adminPanel.style.display === "none" ? "block" : "none";
-  loadBikes();
+  const visible = adminPanel.style.display === "none";
+  adminPanel.style.display = visible ? "block" : "none";
+
+  if (visible) loadBikes(); // hanya panggil saat admin ON
 };
+
 
 
 /* ===============================

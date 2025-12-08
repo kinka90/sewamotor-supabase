@@ -130,18 +130,6 @@
   </div>
 </div>
 
-
-<div id="detailModal" class="modal">
-  <div class="dialog">
-    <h3 id="detailTitle"></h3>
-    <p id="detailText" style="font-size:14px;margin-top:10px;"></p>
-
-    <button class="btn" onclick="closeDetail()" style="width:100%;margin-top:10px;background:#777;">
-      Tutup
-    </button>
-  </div>
-</div>
-
   <h4>Riwayat Sewa</h4>
 
   <button id="deleteAllRentalsBtn" class="btn" 
@@ -263,15 +251,17 @@ async function loadBikes() {
 
 
         ${
-          adminPanel.style.display === "block"
+          isAdmin
           ? `
             <button class="btn" style="background:#b03;color:#fff;"
               onclick="deleteBike('${b.id}')">Hapus</button>
 
             <button class="btn" style="background:#555;color:#fff;"
               onclick="editBike('${b.id}')">Edit</button>
-          ` : ""
+          `
+          : ""
         }
+
       </div>
     `;
 
@@ -281,6 +271,31 @@ async function loadBikes() {
 
 
 loadBikes();
+
+
+/* ===============================
+   DETAIL MOTOR
+================================= */
+
+async function showDetail(id) {
+  const { data: bike } = await db.from("bikes").select("*").eq("id", id).single();
+  if (!bike) return alert("Data motor tidak ditemukan!");
+
+  document.getElementById("detailTitle").innerText = bike.name;
+  document.getElementById("detailText").innerHTML = `
+    <b>Tarif per Jam:</b> Rp ${bike.rate_hour}<br>
+    <b>Tarif per Hari:</b> Rp ${bike.rate_day}<br>
+    <b>Status:</b> ${bike.status}<br><br>
+    <b>Detail Motor:</b><br>${bike.detail || "-"}
+  `;
+
+  document.getElementById("detailModal").classList.add("show");
+}
+
+function closeDetail() {
+  document.getElementById("detailModal").classList.remove("show");
+}
+
 
 /* ===============================
      4. MODAL SEWA
@@ -416,11 +431,11 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
 
 const adminPanel = document.getElementById("adminPanel");
 document.getElementById("adminBtn").onclick = () => {
-  const visible = adminPanel.style.display === "none";
-  adminPanel.style.display = visible ? "block" : "none";
-
-  if (visible) loadBikes(); // hanya panggil saat admin ON
+  isAdmin = !isAdmin;
+  adminPanel.style.display = isAdmin ? "block" : "none";
+  loadBikes();
 };
+
 
 
 

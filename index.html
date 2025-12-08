@@ -131,6 +131,17 @@
 </div>
 
 
+<div id="detailModal" class="modal">
+  <div class="dialog">
+    <h3 id="detailTitle"></h3>
+    <p id="detailText" style="font-size:14px;margin-top:10px;"></p>
+
+    <button class="btn" onclick="closeDetail()" style="width:100%;margin-top:10px;background:#777;">
+      Tutup
+    </button>
+  </div>
+</div>
+
   <h4>Riwayat Sewa</h4>
 
   <button id="deleteAllRentalsBtn" class="btn" 
@@ -815,18 +826,6 @@ async function downloadPdfSupabase() {
 }
 
 </script>
-
-<div id="detailModal" class="modal">
-  <div class="dialog">
-    <h3 id="detailTitle"></h3>
-    <p id="detailText" style="font-size:14px;margin-top:10px;"></p>
-
-    <button class="btn" onclick="closeDetail()" style="width:100%;margin-top:10px;background:#777;">
-      Tutup
-    </button>
-  </div>
-</div>
-
 </body>
 </html>
 

@@ -752,6 +752,7 @@ async function editBike(id) {
   const newRate = prompt("Tarif/jam:", b.rate_hour);
   const newRateDay = prompt("Tarif/hari:", b.rate_day);
   const newImageURL = prompt("URL gambar baru (kosongkan jika tidak ganti):", b.image_url);
+  const newDetail = prompt("Detail motor:", b.detail);
 
   let uploadedURL = b.image_url;
 

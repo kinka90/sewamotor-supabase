@@ -251,17 +251,15 @@ async function loadBikes() {
 
 
         ${
-          isAdmin
+          adminPanel.style.display === "block"
           ? `
             <button class="btn" style="background:#b03;color:#fff;"
               onclick="deleteBike('${b.id}')">Hapus</button>
 
             <button class="btn" style="background:#555;color:#fff;"
               onclick="editBike('${b.id}')">Edit</button>
-          `
-          : ""
+          ` : ""
         }
-
       </div>
     `;
 
@@ -431,11 +429,11 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
 
 const adminPanel = document.getElementById("adminPanel");
 document.getElementById("adminBtn").onclick = () => {
-  isAdmin = !isAdmin;
-  adminPanel.style.display = isAdmin ? "block" : "none";
-  loadBikes();
-};
+  const visible = adminPanel.style.display === "none";
+  adminPanel.style.display = visible ? "block" : "none";
 
+  if (visible) loadBikes(); // hanya panggil saat admin ON
+};
 
 
 

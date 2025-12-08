@@ -308,13 +308,17 @@ async function openRent(id) {
 
 }
 
+
+
+/* ===============================
+     5. SIMPAN SEWA KE SUPABASE
+   =============================== */
 document.getElementById("rentForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const bikeId = document.getElementById("bikeId").value;
   const name = document.getElementById("name").value;
   const phone = document.getElementById("phone").value;
-  const phoneAdmin = document.getElementById("phoneAdmin").value;
   const hours = parseInt(document.getElementById("hours").value);
   const rentalDate = new Date(document.getElementById("rentalDate").value);
   const hasKTP = document.getElementById("ktp").checked;
@@ -324,7 +328,6 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
   const start = rentalDate;
   const end = new Date(start.getTime() + hours * 60 * 60 * 1000);
 
-  // Insert rental ke Supabase
   const { error } = await db.from("rentals").insert({
     name,
     phone,
@@ -333,6 +336,7 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
     total,
     start_time: start.toISOString(),
     end_time: end.toISOString(),
+    return_time: null,
     status: "ongoing",
     ktp: hasKTP,
     ktm: hasKTM
@@ -383,46 +387,6 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
   rentModal.classList.remove("show");
 });
 
-
-/* ===============================
-     5. SIMPAN SEWA KE SUPABASE
-   =============================== */
-document.getElementById("rentForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const bikeId = document.getElementById("bikeId").value;
-  const name = document.getElementById("name").value;
-  const phone = document.getElementById("phone").value;
-  const hours = parseInt(document.getElementById("hours").value);
-  const rentalDate = new Date(document.getElementById("rentalDate").value);
-  const hasKTP = document.getElementById("ktp").checked;
-  const hasKTM = document.getElementById("ktm").checked;
-  const total = parseInt(totalInput.value);
-
-  const start = rentalDate;
-  const end = new Date(start.getTime() + hours * 60 * 60 * 1000);
-
-  const { error } = await db.from("rentals").insert({
-    name,
-    phone,
-    bike_id: bikeId,
-    duration: hours,
-    total,
-    start_time: start.toISOString(),
-    end_time: end.toISOString(),
-    return_time: null,
-    status: "ongoing",
-    ktp: hasKTP,
-    ktm: hasKTM
-  });
-
-  if (error) return alert("Gagal menyewa: " + error.message);
-
-  await db.from("bikes").update({ status: "rented" }).eq("id", bikeId);
-
-  alert("Motor berhasil disewa!");
-  rentModal.classList.remove("show");
-});
 
 
 /* ===============================

@@ -803,7 +803,7 @@ async function editBike(id) {
   }
 
   await db.from("bikes")
-    .update({ name: newName, rate_hour: newRate, image_url: uploadedURL })
+    .update({ name: newName, rate_hour: newRate, rate_day: newRateDay, image_url: uploadedURL, detail: newDetail })
     .eq("id", id);
 
   loadBikes();

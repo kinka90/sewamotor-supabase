@@ -63,7 +63,7 @@
       </div>
       <!-- Tambahan nomor admin -->
       <div style="margin-top:4px; font-size:12px; color:#7c0303;">
-        <i>Kalau anda penyewa isi No Admin: 0812-3456-7890 . Agar pesan terkirim ke admin</i>
+        <i>Kalau anda penyewa isi No Admin: 081234567890 . Agar pesan terkirim ke admin</i>
       </div>
 
       <div>
@@ -407,11 +407,11 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
   Nama: ${name}
   No HP: ${phone}
 
-  Motor: ${bikeId}
+  Motor: ${b ? b.name : '-'}
   Durasi: ${hours} jam
 
-  Mulai: ${start.toLocaleString()}
-  Selesai: ${end.toLocaleString()}
+  Mulai: ${toLocal(start)}
+  Selesai: ${toLocal(end)}
 
   Total: Rp ${total.toLocaleString()}
 
@@ -751,6 +751,7 @@ async function returnBike(rentalId, bikeId) {
   Nama: ${rental.name}
   Mulai: ${toLocal(start)}
   Kembali: ${toLocal(end)}
+  Motor: ${b ? b.name : '-'}
   Durasi: ${diffHours} jam
   Total: Rp ${total.toLocaleString("id-ID")}
 

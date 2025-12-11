@@ -190,23 +190,27 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
      2. REALTIME SUBSCRIBE
    =============================== */
 
+let refreshTimeout = null;
+function safeRefresh() {  
+  if (refreshTimeout) clearTimeout(refreshTimeout);
+  refreshTimeout = setTimeout(() => {
+    loadBikes();
+    renderRentalsTable();
+  }, 200); // debounce 500ms
+}
+
 db.channel("bikes-change")
   .on("postgres_changes", { event: "*", schema: "public", table: "bikes" },
-    () => {
-      loadBikes();        // <-- FIX
-      renderRentalsTable();
-    }
+    () => safeRefresh()
   )
   .subscribe();
 
 db.channel("rentals-change")
   .on("postgres_changes", { event: "*", schema: "public", table: "rentals" },
-    () => {
-      loadBikes();        // <-- FIX
-      renderRentalsTable();
-    }
+    () => safeRefresh()
   )
   .subscribe();
+
 
 /* ===============================
      3. RENDER LIST MOTOR

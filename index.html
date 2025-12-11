@@ -407,11 +407,11 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
   Nama: ${name}
   No HP: ${phone}
 
-  Motor: ${b ? b.name : '-'}
+  Motor: ${bikeId}
   Durasi: ${hours} jam
 
-  Mulai: ${toLocal(start)}
-  Selesai: ${toLocal(end)}
+  Mulai: ${start.toLocaleString()}
+  Selesai: ${end.toLocaleString()}
 
   Total: Rp ${total.toLocaleString()}
 
@@ -751,7 +751,6 @@ async function returnBike(rentalId, bikeId) {
   Nama: ${rental.name}
   Mulai: ${toLocal(start)}
   Kembali: ${toLocal(end)}
-  Motor: ${b ? b.name : '-'}
   Durasi: ${diffHours} jam
   Total: Rp ${total.toLocaleString("id-ID")}
 

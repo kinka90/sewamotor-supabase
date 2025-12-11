@@ -58,8 +58,12 @@
       </div>
 
       <div>
-        <label>No HP Penyewa</label>
+        <label>No HP Penyewa / Admin</label>
         <input id="phone" type="tel" pattern="[0-9+]*" required style="width:100%;" />
+      </div>
+      <!-- Tambahan nomor admin -->
+      <div style="margin-top:4px; font-size:12px; color:#7c0303;">
+        <i>Kalau anda penyewa isi No Admin: 0812-3456-7890 . Agar pesan terkirim ke admin</i>
       </div>
 
       <div>
@@ -737,13 +741,43 @@ async function returnBike(rentalId, bikeId) {
     .update({ status: "available" })
     .eq("id", bikeId);
 
-  alert(
-    `Sewa selesai!\n` +
-    `Mulai   : ${toLocal(start)}\n` +
-    `Kembali : ${toLocal(end)}\n` +
-    `Durasi  : ${diffHours} jam\n` +
-    `Total   : Rp ${total.toLocaleString()}`
-  );
+  /* ===============================
+       KIRIM PESAN WHATSAPP OTOMATIS
+     =============================== */
+
+  const text = `
+  *Sewa Motor Telah Selesai*
+
+  Nama: ${rental.name}
+  Mulai: ${toLocal(start)}
+  Kembali: ${toLocal(end)}
+  Durasi: ${diffHours} jam
+  Total: Rp ${total.toLocaleString("id-ID")}
+
+  Terima kasih telah menggunakan layanan kami 😊
+  `.trim();
+
+    function formatWA(num) {
+      return num.replace(/^\+?0/, "62").replace(/\s+/g, "");
+    }
+
+    const wa = formatWA(rental.phone);
+    const msg = encodeURIComponent(text);
+
+    // buka chat WA otomatis
+    window.open(`https://wa.me/${wa}?text=${msg}`, "_blank");
+
+    /* ===============================
+      NOTIFIKASI SELESAI SEWA REELTIME
+      =============================== */
+
+    alert(
+      `Sewa selesai!\n` +
+      `Mulai   : ${toLocal(start)}\n` +
+      `Kembali : ${toLocal(end)}\n` +
+      `Durasi  : ${diffHours} jam\n` +
+      `Total   : Rp ${total.toLocaleString()}`
+    );
 
   renderRentalsTable();
   loadBikes();

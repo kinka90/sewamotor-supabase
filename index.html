@@ -190,13 +190,13 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
      2. REALTIME SUBSCRIBE
    =============================== */
 
-let refreshTimeout = null;
+let refreshTimeout;
 function safeRefresh() {  
   if (refreshTimeout) clearTimeout(refreshTimeout);
   refreshTimeout = setTimeout(() => {
     loadBikes();
     renderRentalsTable();
-  }, 200); // debounce 500ms
+  }, 500); // debounce 500ms
 }
 
 db.channel("bikes-change")
@@ -411,11 +411,11 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
   Nama: ${name}
   No HP: ${phone}
 
-  Motor: ${bikeId}
+  Motor: ${b.name}
   Durasi: ${hours} jam
 
-  Mulai: ${start.toLocaleString()}
-  Selesai: ${end.toLocaleString()}
+  Mulai: ${toLocal(start)}
+  Selesai: ${toLocal(end)}
 
   Total: Rp ${total.toLocaleString()}
 

@@ -612,15 +612,36 @@ document.addEventListener("DOMContentLoaded", () => {
     alert("Logout admin.");
   }
 
+  async function checkIsAdmin() {
+  const { data: session } = await db.auth.getSession();
+  if (!session.session) return false;
+
+  const userId = session.session.user.id;
+
+  const { data } = await db
+    .from("admins")
+    .select("user_id")
+    .eq("user_id", userId)
+    .single();
+
+  return !!data;
+}
+
+
   async function checkAdminSession() {
-    const { data } = await db.auth.getSession();
+  const { data } = await db.auth.getSession();
 
-    isAdmin = !!data.session;
-    adminPanel.style.display = isAdmin ? "block" : "none";
-
-    updateAdminButton();
-    loadBikes();
+  if (!data.session) {
+    isAdmin = false;
+  } else {
+    isAdmin = await checkIsAdmin();
   }
+
+  adminPanel.style.display = isAdmin ? "block" : "none";
+  updateAdminButton();
+  loadBikes();
+}
+
 
   function closeLogin() {
     loginModal.classList.remove("show");

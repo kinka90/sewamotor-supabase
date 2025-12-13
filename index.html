@@ -50,6 +50,10 @@
 </p>
 
 <div id="infoBox" class="card" style="margin:15px 0; background:#fff7e6;">
+  <p style="font-size:13px;color:#62004e;">
+    ℹ️ Penyewaan dilakukan langsung di lokasi rental.  
+    Status motor ditampilkan secara realtime.
+  </p>
   <h3 style="margin-bottom:6px;">📢 Info Terkini</h3>
   <div id="infoContent" style="font-size:14px;color:#444;">
     Tidak ada informasi saat ini.
@@ -72,12 +76,8 @@
       </div>
 
       <div>
-        <label>No HP Penyewa / Admin</label>
+        <label>No HP Penyewa</label>
         <input id="phone" type="tel" pattern="[0-9+]*" required style="width:100%;" />
-      </div>
-      <!-- Tambahan nomor admin -->
-      <div style="margin-top:4px; font-size:12px; color:#7c0303;">
-        <i>Kalau anda penyewa isi No Admin: 081234567890 . Agar pesan terkirim ke admin</i>
       </div>
 
       <div>
@@ -114,10 +114,7 @@
   </div>
 </div>
 
-<p style="font-size:13px;color:#62004e;">
-  ℹ️ Penyewaan dilakukan langsung di lokasi rental.  
-  Status motor ditampilkan secara realtime.
-</p>
+
 
 <script>
   // Tombol Batal modal
@@ -126,6 +123,25 @@
     rentModal.classList.remove("show");
   };
 </script>
+
+
+<!-- MODAL LOGIN ADMIN -->
+<div id="loginModal" class="modal">
+  <div class="dialog">
+    <h3>Login Admin</h3>
+
+    <input id="adminUser" placeholder="Username"
+      style="width:100%;margin-bottom:8px;" />
+
+    <input id="adminPass" type="password" placeholder="Password"
+      style="width:100%;margin-bottom:10px;" />
+
+    <button class="btn" style="width:100%;" onclick="loginAdmin()">Login</button>
+
+    <button class="btn" style="width:100%;background:#777;margin-top:6px;"
+      onclick="closeLogin()">Batal</button>
+  </div>
+</div>
 
 
 
@@ -297,14 +313,13 @@ async function loadBikes() {
       <div class="actions">
         <button class="btn" style="background:#0066cc;color:white;" onclick="showDetail('${b.id}')">Detail</button>
         ${
-        adminPanel.style.display === "block"
+        isAdmin
         ? `<button class="btn" onclick="openRent('${b.id}')" ${b.status !== "available" ? "disabled":""}>Sewa</button>
         `: ""
         }
         ${
-          adminPanel.style.display === "block"
-          ? `
-            
+          isAdmin
+          ? `            
             <button class="btn" style="background:#b03;color:#fff;"
               onclick="deleteBike('${b.id}')">Hapus</button>
 
@@ -550,18 +565,84 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
      6. ADMIN LOGIN TOGGLE
    =============================== */
 
-const adminPanel = document.getElementById("adminPanel");
-adminPanel.style.display = "none"; // default: nonaktif
+/* ===============================
+   ADMIN AUTH (SIMPLE)
+================================= */
 
-document.getElementById("adminBtn").onclick = () => {
-  const isVisible = adminPanel.style.display === "block";
-
-  // toggle
-  adminPanel.style.display = isVisible ? "none" : "block";
-
-  // render ulang card motor setiap ON & OFF
-  loadBikes();
+const ADMIN_ACCOUNT = {
+  username: "admin",
+  password: "12345"
 };
+
+let isAdmin = false;
+
+// Ambil elemen SETELAH DOM siap
+const adminPanel = document.getElementById("adminPanel");
+const adminBtn   = document.getElementById("adminBtn");
+const loginModal = document.getElementById("loginModal");
+
+// Default: admin panel mati
+adminPanel.style.display = "none";
+
+/* ===============================
+   ADMIN FUNCTIONS
+================================= */
+
+function loginAdmin() {
+  const u = document.getElementById("adminUser").value;
+  const p = document.getElementById("adminPass").value;
+
+  if (u === ADMIN_ACCOUNT.username && p === ADMIN_ACCOUNT.password) {
+    isAdmin = true;
+    adminPanel.style.display = "block";
+    loginModal.classList.remove("show");
+
+    updateAdminButton();
+    loadBikes();
+    renderRentalsTable();
+
+    alert("Login admin berhasil!");
+  } else {
+    alert("Username atau password salah!");
+  }
+}
+
+function logoutAdmin() {
+  isAdmin = false;
+  adminPanel.style.display = "none";
+
+  updateAdminButton();
+  loadBikes();
+
+  alert("Logout admin.");
+}
+
+function closeLogin() {
+  loginModal.classList.remove("show");
+}
+
+function updateAdminButton() {
+  adminBtn.innerHTML = isAdmin
+    ? '<i class="fa-solid fa-unlock"></i> Logout'
+    : '<i class="fa-solid fa-lock"></i> Admin';
+}
+
+/* ===============================
+   ADMIN BUTTON HANDLER
+================================= */
+
+adminBtn.onclick = () => {
+  if (!isAdmin) {
+    loginModal.classList.add("show");
+  } else {
+    logoutAdmin();
+  }
+};
+
+// Pastikan teks tombol benar saat load
+updateAdminButton();
+
+
 
 
 

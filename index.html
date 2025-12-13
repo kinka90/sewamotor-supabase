@@ -584,10 +584,30 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
 
 
 /* ===============================
-     6. ADMIN LOGIN TOGGLE
-   =============================== */
+     6. ADMIN LOGIN TOGGLE (FINAL)
+================================ */
 
 let isAdmin = false;
+
+/* ===============================
+   AUTO LOGOUT SAAT KELUAR WEBSITE
+================================ */
+
+// Tutup / reload tab
+window.addEventListener("beforeunload", () => {
+  if (isAdmin) db.auth.signOut();
+});
+
+// Pindah tab / minimize
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden" && isAdmin) {
+    db.auth.signOut();
+  }
+});
+
+/* ===============================
+   LOGIN & LOGOUT ADMIN
+================================ */
 
 async function loginAdmin() {
   const email = document.getElementById("adminEmail").value;
@@ -598,8 +618,12 @@ async function loginAdmin() {
 
   isAdmin = await checkIsAdmin();
 
-  document.getElementById("adminPanel").style.display =
-    isAdmin ? "block" : "none";
+  if (!isAdmin) {
+    await db.auth.signOut();
+    return alert("Akun ini bukan admin");
+  }
+
+  document.getElementById("adminPanel").style.display = "block";
   document.getElementById("loginModal").classList.remove("show");
 
   updateAdminButton();
@@ -611,14 +635,11 @@ async function loginAdmin() {
 
 async function logoutAdmin() {
   await db.auth.signOut();
-  isAdmin = false;
-
-  document.getElementById("adminPanel").style.display = "none";
-  updateAdminButton();
-  loadBikes();
-
-  alert("Logout admin.");
 }
+
+/* ===============================
+   CEK ADMIN
+================================ */
 
 async function checkIsAdmin() {
   const { data } = await db.auth.getSession();
@@ -635,14 +656,43 @@ async function checkIsAdmin() {
   return !!admin;
 }
 
+/* ===============================
+   PROTEKSI REALTIME (SATU KALI)
+================================ */
+
+db.auth.onAuthStateChange(async (event, session) => {
+  if (!session) {
+    isAdmin = false;
+
+    const adminPanel = document.getElementById("adminPanel");
+    if (adminPanel) adminPanel.style.display = "none";
+
+    const tbody = document.getElementById("rentalTable");
+    if (tbody) tbody.innerHTML = "";
+
+    updateAdminButton();
+    loadBikes();
+  }
+});
+
+/* ===============================
+   INIT SAAT HALAMAN DIBUKA
+================================ */
+
 document.addEventListener("DOMContentLoaded", async () => {
   const adminBtn = document.getElementById("adminBtn");
   const loginModal = document.getElementById("loginModal");
 
   const { data } = await db.auth.getSession();
-  if (data.session) {
-    isAdmin = await checkIsAdmin();
+
+  if (!data.session) {
+    isAdmin = false;
+    updateAdminButton();
+    loadBikes();
+    return;
   }
+
+  isAdmin = await checkIsAdmin();
 
   document.getElementById("adminPanel").style.display =
     isAdmin ? "block" : "none";
@@ -653,17 +703,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (isAdmin) renderRentalsTable();
 
   adminBtn.onclick = () => {
-    if (!isAdmin) {
-      loginModal.classList.add("show");
-    } else {
-      logoutAdmin();
-    }
+    if (!isAdmin) loginModal.classList.add("show");
+    else logoutAdmin();
   };
 });
 
+/* ===============================
+   UI
+================================ */
+
 function updateAdminButton() {
   const adminBtn = document.getElementById("adminBtn");
-
   if (!adminBtn) return;
 
   adminBtn.innerHTML = isAdmin
@@ -674,6 +724,7 @@ function updateAdminButton() {
 function closeLogin() {
   document.getElementById("loginModal").classList.remove("show");
 }
+
 
 /* ===============================
      7. LOAD RIWAYAT SEWA

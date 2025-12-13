@@ -130,19 +130,41 @@
   <div class="dialog">
     <h3>Login Admin</h3>
 
-    <input id="adminEmail" type="email" placeholder="Email Admin">
+    <input
+      id="adminEmail"
+      type="email"
+      placeholder="Email Admin"
+      autocomplete="username"
+      required
+      style="width:100%;margin-bottom:10px;"
+    />
 
+    <input
+      id="adminPass"
+      type="password"
+      placeholder="Password"
+      autocomplete="current-password"
+      required
+      style="width:100%;margin-bottom:10px;"
+    />
 
-    <input id="adminPass" type="password" placeholder="Password"
-      style="width:100%;margin-bottom:10px;" />
+    <button
+      class="btn"
+      style="width:100%;"
+      onclick="loginAdmin()"
+    >
+      Login
+    </button>
 
-    <button class="btn" style="width:100%;" onclick="loginAdmin()">Login</button>
-
-    <button class="btn" style="width:100%;background:#777;margin-top:6px;"
-      onclick="closeLogin()">Batal</button>
+    <button
+      class="btn"
+      style="width:100%;background:#777;margin-top:6px;"
+      onclick="closeLogin()"
+    >
+      Batal
+    </button>
   </div>
 </div>
-
 
 
 <!-- Admin Panel -->
@@ -565,93 +587,68 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
      6. ADMIN LOGIN TOGGLE
    =============================== */
 
-document.addEventListener("DOMContentLoaded", () => {
+let isAdmin = false;
 
-  let isAdmin = false;
+async function loginAdmin() {
+  const email = document.getElementById("adminEmail").value;
+  const password = document.getElementById("adminPass").value;
 
-  const adminPanel = document.getElementById("adminPanel");
-  const adminBtn   = document.getElementById("adminBtn");
-  const loginModal = document.getElementById("loginModal");
+  const { error } = await db.auth.signInWithPassword({ email, password });
+  if (error) return alert("Login gagal: " + error.message);
 
-  adminPanel.style.display = "none";
+  isAdmin = await checkIsAdmin();
 
-  async function loginAdmin() {
-    const email = document.getElementById("adminEmail").value;
-    const password = document.getElementById("adminPass").value;
+  document.getElementById("adminPanel").style.display =
+    isAdmin ? "block" : "none";
+  document.getElementById("loginModal").classList.remove("show");
 
-    const { error } = await db.auth.signInWithPassword({
-      email,
-      password
-    });
+  updateAdminButton();
+  loadBikes();
+  renderRentalsTable();
 
-    if (error) {
-      alert("Login gagal: " + error.message);
-      return;
-    }
+  alert("Login admin berhasil!");
+}
 
-    isAdmin = true;
-    adminPanel.style.display = "block";
-    loginModal.classList.remove("show");
+async function logoutAdmin() {
+  await db.auth.signOut();
+  isAdmin = false;
 
-    updateAdminButton();
-    loadBikes();
-    renderRentalsTable();
+  document.getElementById("adminPanel").style.display = "none";
+  updateAdminButton();
+  loadBikes();
 
-    alert("Login admin berhasil!");
-  }
+  alert("Logout admin.");
+}
 
-  async function logoutAdmin() {
-    await db.auth.signOut();
+async function checkIsAdmin() {
+  const { data } = await db.auth.getSession();
+  if (!data.session) return false;
 
-    isAdmin = false;
-    adminPanel.style.display = "none";
+  const userId = data.session.user.id;
 
-    updateAdminButton();
-    loadBikes();
-
-    alert("Logout admin.");
-  }
-
-  async function checkIsAdmin() {
-  const { data: session } = await db.auth.getSession();
-  if (!session.session) return false;
-
-  const userId = session.session.user.id;
-
-  const { data } = await db
+  const { data: admin } = await db
     .from("admins")
     .select("user_id")
     .eq("user_id", userId)
     .single();
 
-  return !!data;
+  return !!admin;
 }
 
+document.addEventListener("DOMContentLoaded", async () => {
+  const adminBtn = document.getElementById("adminBtn");
+  const loginModal = document.getElementById("loginModal");
 
-  async function checkAdminSession() {
   const { data } = await db.auth.getSession();
-
-  if (!data.session) {
-    isAdmin = false;
-  } else {
+  if (data.session) {
     isAdmin = await checkIsAdmin();
   }
 
-  adminPanel.style.display = isAdmin ? "block" : "none";
+  document.getElementById("adminPanel").style.display =
+    isAdmin ? "block" : "none";
+
   updateAdminButton();
   loadBikes();
-}
-
-
-  function closeLogin() {
-    loginModal.classList.remove("show");
-  }
-
-  function updateAdminButton() {
-    adminBtn.innerHTML = isAdmin
-      ? '<i class="fa-solid fa-unlock"></i> Logout'
-      : '<i class="fa-solid fa-lock"></i> Admin';
-  }
 
   adminBtn.onclick = () => {
     if (!isAdmin) {
@@ -660,9 +657,21 @@ document.addEventListener("DOMContentLoaded", () => {
       logoutAdmin();
     }
   };
-
-  checkAdminSession();
 });
+
+function updateAdminButton() {
+  const adminBtn = document.getElementById("adminBtn");
+
+  if (!adminBtn) return;
+
+  adminBtn.innerHTML = isAdmin
+    ? '<i class="fa-solid fa-unlock"></i> Logout'
+    : '<i class="fa-solid fa-lock"></i> Admin';
+}
+
+function closeLogin() {
+  document.getElementById("loginModal").classList.remove("show");
+}
 
 /* ===============================
      7. LOAD RIWAYAT SEWA

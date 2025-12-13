@@ -588,6 +588,11 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
    =============================== */
 
 let isAdmin = false;
+function redirectToHome() {
+  // ganti sesuai halaman awal kamu
+  window.location.href = "index.html";
+}
+
 
 async function loginAdmin() {
   const email = document.getElementById("adminEmail").value;
@@ -613,43 +618,15 @@ async function logoutAdmin() {
   await db.auth.signOut();
   isAdmin = false;
 
-  document.getElementById("adminPanel").style.display = "none";
+  const adminPanel = document.getElementById("adminPanel");
+  if (adminPanel) adminPanel.style.display = "none";
+
   updateAdminButton();
   loadBikes();
 
-  alert("Logout admin.");
+  // ⛔ PAKSA KEMBALI KE HALAMAN AWAL
+  redirectToHome();
 }
-
-/* ===============================
-   AUTO LOGOUT SAAT KELUAR WEBSITE
-================================ */
-
-window.addEventListener("beforeunload", () => {
-  // Jika admin sedang login → paksa logout
-  if (isAdmin) {
-    db.auth.signOut();
-    isAdmin = false;
-  }
-});
-
-// Pantau perubahan auth (login / logout / expired)
-db.auth.onAuthStateChange(async (event, session) => {
-  if (!session) {
-    // User benar-benar logout
-    isAdmin = false;
-
-    const adminPanel = document.getElementById("adminPanel");
-    if (adminPanel) adminPanel.style.display = "none";
-
-    updateAdminButton();
-    loadBikes();
-
-    const tbody = document.getElementById("rentalTable");
-    if (tbody) tbody.innerHTML = "";
-  }
-});
-
-
 
 async function checkIsAdmin() {
   const { data } = await db.auth.getSession();
@@ -671,26 +648,30 @@ document.addEventListener("DOMContentLoaded", async () => {
   const loginModal = document.getElementById("loginModal");
 
   const { data } = await db.auth.getSession();
-  if (data.session) {
-    isAdmin = await checkIsAdmin();
+
+  if (!data.session) {
+    // ⛔ Tidak login → tidak boleh di admin
+    redirectToHome();
+    return;
   }
 
-  document.getElementById("adminPanel").style.display =
-    isAdmin ? "block" : "none";
+  isAdmin = await checkIsAdmin();
 
+  if (!isAdmin) {
+    redirectToHome();
+    return;
+  }
+
+  document.getElementById("adminPanel").style.display = "block";
   updateAdminButton();
   loadBikes();
-
-  if (isAdmin) renderRentalsTable();
+  renderRentalsTable();
 
   adminBtn.onclick = () => {
-    if (!isAdmin) {
-      loginModal.classList.add("show");
-    } else {
-      logoutAdmin();
-    }
+    logoutAdmin();
   };
 });
+
 
 
 function updateAdminButton() {
@@ -706,6 +687,37 @@ function updateAdminButton() {
 function closeLogin() {
   document.getElementById("loginModal").classList.remove("show");
 }
+
+
+/* ===============================
+   AUTO LOGOUT SAAT KELUAR WEBSITE
+================================ */
+
+window.addEventListener("beforeunload", () => {
+  // Jika admin sedang login → paksa logout
+  if (isAdmin) {
+    db.auth.signOut();
+    isAdmin = false;
+  }
+});
+
+db.auth.onAuthStateChange(async (event, session) => {
+  if (!session) {
+    isAdmin = false;
+
+    const adminPanel = document.getElementById("adminPanel");
+    if (adminPanel) adminPanel.style.display = "none";
+
+    updateAdminButton();
+    loadBikes();
+
+    const tbody = document.getElementById("rentalTable");
+    if (tbody) tbody.innerHTML = "";
+
+    // ⛔ JIKA BUKAN ADMIN → JANGAN BOLEH DI HALAMAN ADMIN
+    redirectToHome();
+  }
+});
 
 
 /* ===============================

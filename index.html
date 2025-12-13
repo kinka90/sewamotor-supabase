@@ -918,9 +918,9 @@ async function downloadPdfSupabase() {
     r.duration ? r.duration + " jam" : "-",
     "Rp " + numberWithDots(r.total),
     toLocal(r.start_time),
-    toLocal(r.end_time),          // Selesai
-    r.ktp || "-",                 // KTP/KTM
-    toLocal(r.return_time),       // Kembalikan
+    toLocal(r.end_time),                                  // Selesai
+    (r.ktp ? "KTP " : "") + (r.ktm ? "KTM" : "") || "-",  // KTP/KTM
+    toLocal(r.return_time),                               // Kembalikan
     r.status || "-"
   ]);
 

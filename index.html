@@ -588,11 +588,6 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
    =============================== */
 
 let isAdmin = false;
-function redirectToHome() {
-  // ganti sesuai halaman awal kamu
-  window.location.href = "index.html";
-}
-
 
 async function loginAdmin() {
   const email = document.getElementById("adminEmail").value;
@@ -618,46 +613,12 @@ async function logoutAdmin() {
   await db.auth.signOut();
   isAdmin = false;
 
-  const adminPanel = document.getElementById("adminPanel");
-  if (adminPanel) adminPanel.style.display = "none";
-
+  document.getElementById("adminPanel").style.display = "none";
   updateAdminButton();
   loadBikes();
 
-  // ⛔ PAKSA KEMBALI KE HALAMAN AWAL
-  redirectToHome();
+  alert("Logout admin.");
 }
-
-/* ===============================
-   AUTO LOGOUT SAAT KELUAR WEBSITE
-================================ */
-
-window.addEventListener("beforeunload", () => {
-  // Jika admin sedang login → paksa logout
-  if (isAdmin) {
-    db.auth.signOut();
-    isAdmin = false;
-  }
-});
-
-db.auth.onAuthStateChange(async (event, session) => {
-  if (!session) {
-    isAdmin = false;
-
-    const adminPanel = document.getElementById("adminPanel");
-    if (adminPanel) adminPanel.style.display = "none";
-
-    updateAdminButton();
-    loadBikes();
-
-    const tbody = document.getElementById("rentalTable");
-    if (tbody) tbody.innerHTML = "";
-
-    // ⛔ JIKA BUKAN ADMIN → JANGAN BOLEH DI HALAMAN ADMIN
-    redirectToHome();
-  }
-});
-
 
 async function checkIsAdmin() {
   const { data } = await db.auth.getSession();
@@ -679,31 +640,26 @@ document.addEventListener("DOMContentLoaded", async () => {
   const loginModal = document.getElementById("loginModal");
 
   const { data } = await db.auth.getSession();
-
-  if (!data.session) {
-    // ⛔ Tidak login → tidak boleh di admin
-    redirectToHome();
-    return;
+  if (data.session) {
+    isAdmin = await checkIsAdmin();
   }
 
-  isAdmin = await checkIsAdmin();
+  document.getElementById("adminPanel").style.display =
+    isAdmin ? "block" : "none";
 
-  if (!isAdmin) {
-    redirectToHome();
-    return;
-  }
-
-  document.getElementById("adminPanel").style.display = "block";
   updateAdminButton();
   loadBikes();
-  renderRentalsTable();
+
+  if (isAdmin) renderRentalsTable();
 
   adminBtn.onclick = () => {
-    logoutAdmin();
+    if (!isAdmin) {
+      loginModal.classList.add("show");
+    } else {
+      logoutAdmin();
+    }
   };
 });
-
-
 
 function updateAdminButton() {
   const adminBtn = document.getElementById("adminBtn");
@@ -718,7 +674,6 @@ function updateAdminButton() {
 function closeLogin() {
   document.getElementById("loginModal").classList.remove("show");
 }
-
 
 /* ===============================
      7. LOAD RIWAYAT SEWA

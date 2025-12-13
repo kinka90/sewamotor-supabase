@@ -114,6 +114,10 @@
   </div>
 </div>
 
+<p style="font-size:13px;color:#62004e;">
+  ℹ️ Penyewaan dilakukan langsung di lokasi rental.  
+  Status motor ditampilkan secara realtime.
+</p>
 
 <script>
   // Tombol Batal modal
@@ -291,13 +295,16 @@ async function loadBikes() {
       ${rentInfo}
 
       <div class="actions">
-        <button class="btn" onclick="openRent('${b.id}')" ${b.status !== "available" ? "disabled":""}>Sewa</button>
         <button class="btn" style="background:#0066cc;color:white;" onclick="showDetail('${b.id}')">Detail</button>
-
-
+        ${
+        adminPanel.style.display === "block"
+        ? `<button class="btn" onclick="openRent('${b.id}')" ${b.status !== "available" ? "disabled":""}>Sewa</button>
+        `: ""
+        }
         ${
           adminPanel.style.display === "block"
           ? `
+            
             <button class="btn" style="background:#b03;color:#fff;"
               onclick="deleteBike('${b.id}')">Hapus</button>
 

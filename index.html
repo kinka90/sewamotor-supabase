@@ -620,6 +620,37 @@ async function logoutAdmin() {
   alert("Logout admin.");
 }
 
+/* ===============================
+   AUTO LOGOUT SAAT KELUAR WEBSITE
+================================ */
+
+window.addEventListener("beforeunload", () => {
+  // Jika admin sedang login → paksa logout
+  if (isAdmin) {
+    db.auth.signOut();
+    isAdmin = false;
+  }
+});
+
+// Pantau perubahan auth (login / logout / expired)
+db.auth.onAuthStateChange(async (event, session) => {
+  if (!session) {
+    // User benar-benar logout
+    isAdmin = false;
+
+    const adminPanel = document.getElementById("adminPanel");
+    if (adminPanel) adminPanel.style.display = "none";
+
+    updateAdminButton();
+    loadBikes();
+
+    const tbody = document.getElementById("rentalTable");
+    if (tbody) tbody.innerHTML = "";
+  }
+});
+
+
+
 async function checkIsAdmin() {
   const { data } = await db.auth.getSession();
   if (!data.session) return false;
@@ -661,6 +692,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 });
 
+
 function updateAdminButton() {
   const adminBtn = document.getElementById("adminBtn");
 
@@ -674,6 +706,7 @@ function updateAdminButton() {
 function closeLogin() {
   document.getElementById("loginModal").classList.remove("show");
 }
+
 
 /* ===============================
      7. LOAD RIWAYAT SEWA

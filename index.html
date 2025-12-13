@@ -404,24 +404,30 @@ async function loadPublicInfo() {
   }
 
   box.innerHTML = `
-  <b>${data.title}</b><br>
-  ${data.message}<br>
-  <small style="color:#888;">
-    Diposting: ${toDateOnly(data.created_at)}
-  </small>
-`;
-
-  function toDateOnly(dateInput) {
-    if (!dateInput) return "-";
-    const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
-
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-
-    return `${d}-${m}-${y}`;
-  }
+    <b>${data.title || "Info"}</b><br>
+    ${data.message}<br>
+    <small style="color:#888;">
+      Diposting: ${toDateOnly(data.created_at)}
+    </small>
+    ${
+      isAdmin
+        ? `<br><button class="btn" style="margin-top:6px;background:#b90909"
+            onclick="deletePublicInfo('${data.id}')">
+            <i class="fa fa-trash"></i> Hapus Info
+          </button>`
+        : ""
+    }
+  `;
 }
+
+function toDateOnly(dateInput) {
+  if (!dateInput) return "-";
+  const date = new Date(dateInput);
+  return `${date.getDate().toString().padStart(2, "0")}-${(date.getMonth()+1)
+    .toString().padStart(2,"0")}-${date.getFullYear()}`;
+}
+
+
 
 loadPublicInfo();
 
@@ -441,10 +447,56 @@ async function saveInfo() {
 
   if (!message) return alert("Isi info terlebih dahulu!");
 
-  await db.from("public_info").insert({ title, message });
+  const { data, error } = await db
+    .from("public_info")
+    .insert({ title, message })
+    .select()
+    .single();
 
-  alert("Info terkini diperbarui!");
+  if (error) {
+    alert("Gagal simpan info: " + error.message);
+    return;
+  }
+
+  // 🔥 UPDATE UI LANGSUNG TANPA REFRESH
+  document.getElementById("infoContent").innerHTML = `
+    <b>${data.title || "Info"}</b><br>
+    ${data.message}<br>
+    <small style="color:#888;">
+      Diposting: ${toDateOnly(data.created_at)}
+    </small>
+    <br>
+    <button class="btn" style="margin-top:6px;background:#b90909"
+      onclick="deletePublicInfo('${data.id}')">
+      <i class="fa fa-trash"></i> Hapus Info
+    </button>
+  `;
+
+  // reset input
+  document.getElementById("infoTitle").value = "";
+  document.getElementById("infoMessage").value = "";
+
+  alert("Info publik berhasil dipublikasikan!");
 }
+
+async function deletePublicInfo(id) {
+  if (!confirm("Hapus info publik ini?")) return;
+
+  const { error } = await db
+    .from("public_info")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    alert("Gagal hapus info: " + error.message);
+    return;
+  }
+
+  document.getElementById("infoContent").innerText =
+    "Tidak ada informasi saat ini.";
+}
+
+
 
 
 

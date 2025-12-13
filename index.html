@@ -359,12 +359,20 @@ async function loadPublicInfo() {
   }
 
   box.innerHTML = `
-    <b>${data.title}</b><br>
-    ${data.message}<br>
-    <small style="color:#888;">
-      Update: ${toLocal(data.created_at)}
-    </small>
-  `;
+  <b>${data.title}</b><br>
+  ${data.message}<br>
+  <small style="color:#888;">
+    Update data: ${toLocal(data.created_at)}<br>
+    Jam sekarang: <span id="liveClock"></span>
+  </small>
+`;
+  // Live clock
+  function updateClock() {
+    const now = new Date();
+    document.getElementById("liveClock").innerText = toLocal(now);
+  }
+  updateClock();
+  setInterval(updateClock, 60000); // update tiap menit
 }
 
 loadPublicInfo();

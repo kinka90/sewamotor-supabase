@@ -362,7 +362,7 @@ async function loadPublicInfo() {
   <b>${data.title}</b><br>
   ${data.message}<br>
   <small style="color:#888;">
-    Update data: <span id="liveClock"></span>
+    Diposting: ${toLocal(data.created_at)}
   </small>
 `;
   // Live clock

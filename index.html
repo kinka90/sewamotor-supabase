@@ -650,6 +650,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   updateAdminButton();
   loadBikes();
 
+  if (isAdmin) renderRentalsTable();
+
   adminBtn.onclick = () => {
     if (!isAdmin) {
       loginModal.classList.add("show");

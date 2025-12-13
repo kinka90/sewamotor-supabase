@@ -256,28 +256,37 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 /* ===============================
      2. REALTIME SUBSCRIBE
    =============================== */
+let isRenderingBikes = false;
+let isRenderingRentals = false;
 
 let refreshTimeout = null;
-function safeRefresh() {  
-  if (refreshTimeout) clearTimeout(refreshTimeout);
-  refreshTimeout = setTimeout(() => {
-    loadBikes();
-    if (isAdmin) renderRentalsTable();
-  }, 500);
+
+function safeRefresh() {
+  if (refreshTimeout) return;
+
+  refreshTimeout = setTimeout(async () => {
+    if (!isRenderingBikes) {
+      await loadBikes();
+    }
+    if (isAdmin && !isRenderingRentals) {
+      await renderRentalsTable();
+    }
+    refreshTimeout = null;
+  }, 300);
 }
 
+if (!window.bikesChannel) {
+  window.bikesChannel = db.channel("bikes-change")
+    .on("postgres_changes", { event: "*", schema: "public", table: "bikes" }, safeRefresh)
+    .subscribe();
+}
 
-db.channel("bikes-change")
-  .on("postgres_changes", { event: "*", schema: "public", table: "bikes" },
-    () => safeRefresh()
-  )
-  .subscribe();
+if (!window.rentalsChannel) {
+  window.rentalsChannel = db.channel("rentals-change")
+    .on("postgres_changes", { event: "*", schema: "public", table: "rentals" }, safeRefresh)
+    .subscribe();
+}
 
-db.channel("rentals-change")
-  .on("postgres_changes", { event: "*", schema: "public", table: "rentals" },
-    () => safeRefresh()
-  )
-  .subscribe();
 
 
 /* ===============================
@@ -295,19 +304,21 @@ async function getActiveRental(bikeId) {
 }
 
 async function loadBikes() {
+  if (isRenderingBikes) return;
+  isRenderingBikes = true;
+
   const { data } = await db.from("bikes").select("*");
 
   const grid = document.getElementById("motorGrid");
   grid.innerHTML = "";
 
   for (const b of data) {
-
     let rentInfo = "";
     if (b.status === "rented") {
       const active = await getActiveRental(b.id);
       if (active) {
         rentInfo = `
-          <p style="font-size:12px; margin-top:6px; color:#b90909;">
+          <p style="font-size:12px;color:#b90909;">
             Mulai: ${toLocal(active.start_time)}<br>
             Selesai: ${toLocal(active.end_time)}
           </p>
@@ -317,48 +328,40 @@ async function loadBikes() {
 
     const div = document.createElement("div");
     div.className = "card";
-
     div.innerHTML = `
       <div class="motor-img">
         <img src="${b.image_url || 'https://via.placeholder.com/200'}"
-            style="width:100%;height:100%;object-fit:cover;border-radius:8px;">
+          style="width:100%;height:100%;object-fit:cover;border-radius:8px;">
       </div>
-
       <h3>${b.name}</h3>
       <p>Rp ${b.rate_hour}/jam</p>
-
       <span class="status ${b.status === 'available' ? 'available':'rented'}">
         ${b.status === "available" ? "Tersedia" : "Disewa"}
       </span>
-
       ${rentInfo}
-
       <div class="actions">
-        <button class="btn" style="background:#0066cc;color:white;" onclick="showDetail('${b.id}')">Detail</button>
-        ${
-        isAdmin
-        ? `<button class="btn" onclick="openRent('${b.id}')" ${b.status !== "available" ? "disabled":""}>Sewa</button>
-        `: ""
-        }
+        <button class="btn" onclick="showDetail('${b.id}')">Detail</button>
         ${
           isAdmin
-          ? `            
+            ? `
+            <button class="btn" onclick="openRent('${b.id}')" ${b.status !== "available" ? "disabled":""}>Sewa</button>
+            
             <button class="btn" style="background:#b03;color:#fff;"
               onclick="deleteBike('${b.id}')">Hapus</button>
 
             <button class="btn" style="background:#555;color:#fff;"
               onclick="editBike('${b.id}')">Edit</button>
-          ` : ""
+
+            `: ""
         }
       </div>
     `;
-
     grid.appendChild(div);
   }
+
+  isRenderingBikes = false;
 }
 
-
-loadBikes();
 
 
 /* ===============================
@@ -537,6 +540,7 @@ async function openRent(id) {
   );
 
   // Update saat user ubah durasi
+  hoursInput.oninput = null; // Hapus event listener lama
   hoursInput.oninput = () => {
     totalInput.value = hitungTotal(
       parseInt(hoursInput.value),
@@ -546,7 +550,6 @@ async function openRent(id) {
   };
 
 }
-
 
 
 /* ===============================
@@ -708,12 +711,10 @@ db.auth.onAuthStateChange(async (_event, session) => {
 /* INIT */
 document.addEventListener("DOMContentLoaded", async () => {
   const { data } = await db.auth.getSession();
-
   isAdmin = data.session ? await checkIsAdmin() : false;
-
   adminPanel.style.display = isAdmin ? "block" : "none";
   updateAdminButton();
-  loadBikes();
+  initialRefresh();
 
   if (isAdmin) renderRentalsTable();
 
@@ -859,6 +860,8 @@ async function renderRentalsTable() {
     if (tbody) tbody.innerHTML = "";
     return;
   }
+  if (isRenderingRentals) return;
+  isRenderingRentals = true;
 
   const { data: rentals, error } = await db
     .from("rentals")
@@ -903,6 +906,7 @@ async function renderRentalsTable() {
     `;
     tbody.appendChild(tr);
   }
+  isRenderingRentals = false;
 }
 
 
@@ -1042,7 +1046,7 @@ async function returnBike(rentalId, bikeId) {
   *Sewa Motor Telah Selesai*
 
   Nama: ${rental.name}
-  Motor: ${rental.bikes ? rental.bikes.name : "-"}
+  Motor: ${bikeName}
   Mulai: ${toLocal(start)}
   Kembali: ${toLocal(end)}
   Durasi: ${diffHours} jam

@@ -257,6 +257,7 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
      2. REALTIME SUBSCRIBE
    =============================== */
 
+let refreshTimeout = null;
 function safeRefresh() {  
   if (refreshTimeout) clearTimeout(refreshTimeout);
   refreshTimeout = setTimeout(() => {
@@ -584,37 +585,18 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
 
 
 /* ===============================
-     6. ADMIN LOGIN TOGGLE (FINAL)
+   6. ADMIN LOGIN TOGGLE (FIXED)
 ================================ */
 
 let isAdmin = false;
 
-/* ===============================
-   AUTO LOGOUT SAAT KELUAR WEBSITE
-================================ */
-
-// Tutup / reload tab
-window.addEventListener("beforeunload", () => {
-  if (isAdmin) db.auth.signOut();
-});
-
-// Pindah tab / minimize
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "hidden" && isAdmin) {
-    db.auth.signOut();
-  }
-});
-
-/* ===============================
-   LOGIN & LOGOUT ADMIN
-================================ */
-
+/* LOGIN ADMIN */
 async function loginAdmin() {
-  const email = document.getElementById("adminEmail").value;
-  const password = document.getElementById("adminPass").value;
+  const email = adminEmail.value;
+  const password = adminPass.value;
 
   const { error } = await db.auth.signInWithPassword({ email, password });
-  if (error) return alert("Login gagal: " + error.message);
+  if (error) return alert(error.message);
 
   isAdmin = await checkIsAdmin();
 
@@ -623,107 +605,83 @@ async function loginAdmin() {
     return alert("Akun ini bukan admin");
   }
 
-  document.getElementById("adminPanel").style.display = "block";
-  document.getElementById("loginModal").classList.remove("show");
+  adminPanel.style.display = "block";
+  loginModal.classList.remove("show");
 
   updateAdminButton();
   loadBikes();
   renderRentalsTable();
 
-  alert("Login admin berhasil!");
+  alert("Login admin berhasil");
 }
 
+/* LOGOUT ADMIN */
 async function logoutAdmin() {
   await db.auth.signOut();
+
+  isAdmin = false;
+  adminPanel.style.display = "none";
+
+  const tbody = document.getElementById("rentalTable");
+  if (tbody) tbody.innerHTML = "";
+
+  updateAdminButton();
+  loadBikes();
 }
 
-/* ===============================
-   CEK ADMIN
-================================ */
-
+/* CEK ADMIN */
 async function checkIsAdmin() {
   const { data } = await db.auth.getSession();
   if (!data.session) return false;
 
-  const userId = data.session.user.id;
-
   const { data: admin } = await db
     .from("admins")
     .select("user_id")
-    .eq("user_id", userId)
+    .eq("user_id", data.session.user.id)
     .single();
 
   return !!admin;
 }
 
-/* ===============================
-   PROTEKSI REALTIME (SATU KALI)
-================================ */
-
-db.auth.onAuthStateChange(async (event, session) => {
+/* AUTH LISTENER (SATU KALI) */
+db.auth.onAuthStateChange(async (_event, session) => {
   if (!session) {
     isAdmin = false;
-
-    const adminPanel = document.getElementById("adminPanel");
-    if (adminPanel) adminPanel.style.display = "none";
-
-    const tbody = document.getElementById("rentalTable");
-    if (tbody) tbody.innerHTML = "";
-
+    adminPanel.style.display = "none";
     updateAdminButton();
     loadBikes();
   }
 });
 
-/* ===============================
-   INIT SAAT HALAMAN DIBUKA
-================================ */
-
+/* INIT */
 document.addEventListener("DOMContentLoaded", async () => {
-  const adminBtn = document.getElementById("adminBtn");
-  const loginModal = document.getElementById("loginModal");
-
   const { data } = await db.auth.getSession();
 
-  if (!data.session) {
-    isAdmin = false;
-    updateAdminButton();
-    loadBikes();
-    return;
-  }
+  isAdmin = data.session ? await checkIsAdmin() : false;
 
-  isAdmin = await checkIsAdmin();
-
-  document.getElementById("adminPanel").style.display =
-    isAdmin ? "block" : "none";
-
+  adminPanel.style.display = isAdmin ? "block" : "none";
   updateAdminButton();
   loadBikes();
 
   if (isAdmin) renderRentalsTable();
 
   adminBtn.onclick = () => {
-    if (!isAdmin) loginModal.classList.add("show");
-    else logoutAdmin();
+    if (isAdmin) logoutAdmin();
+    else loginModal.classList.add("show");
   };
 });
 
-/* ===============================
-   UI
-================================ */
-
+/* UI */
 function updateAdminButton() {
-  const adminBtn = document.getElementById("adminBtn");
-  if (!adminBtn) return;
-
   adminBtn.innerHTML = isAdmin
     ? '<i class="fa-solid fa-unlock"></i> Logout'
     : '<i class="fa-solid fa-lock"></i> Admin';
 }
 
 function closeLogin() {
-  document.getElementById("loginModal").classList.remove("show");
+  loginModal.classList.remove("show");
 }
+
 
 
 /* ===============================

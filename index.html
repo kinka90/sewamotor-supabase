@@ -130,8 +130,8 @@
   <div class="dialog">
     <h3>Login Admin</h3>
 
-    <input id="adminUser" placeholder="Username"
-      style="width:100%;margin-bottom:8px;" />
+    <input id="adminEmail" type="email" placeholder="Email Admin">
+
 
     <input id="adminPass" type="password" placeholder="Password"
       style="width:100%;margin-bottom:10px;" />
@@ -565,34 +565,30 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
      6. ADMIN LOGIN TOGGLE
    =============================== */
 
-/* ===============================
-   ADMIN AUTH (SIMPLE)
-================================= */
+document.addEventListener("DOMContentLoaded", () => {
 
-const ADMIN_ACCOUNT = {
-  username: "admin",
-  password: "12345"
-};
+  let isAdmin = false;
 
-let isAdmin = false;
+  const adminPanel = document.getElementById("adminPanel");
+  const adminBtn   = document.getElementById("adminBtn");
+  const loginModal = document.getElementById("loginModal");
 
-// Ambil elemen SETELAH DOM siap
-const adminPanel = document.getElementById("adminPanel");
-const adminBtn   = document.getElementById("adminBtn");
-const loginModal = document.getElementById("loginModal");
+  adminPanel.style.display = "none";
 
-// Default: admin panel mati
-adminPanel.style.display = "none";
+  async function loginAdmin() {
+    const email = document.getElementById("adminEmail").value;
+    const password = document.getElementById("adminPass").value;
 
-/* ===============================
-   ADMIN FUNCTIONS
-================================= */
+    const { error } = await db.auth.signInWithPassword({
+      email,
+      password
+    });
 
-function loginAdmin() {
-  const u = document.getElementById("adminUser").value;
-  const p = document.getElementById("adminPass").value;
+    if (error) {
+      alert("Login gagal: " + error.message);
+      return;
+    }
 
-  if (u === ADMIN_ACCOUNT.username && p === ADMIN_ACCOUNT.password) {
     isAdmin = true;
     adminPanel.style.display = "block";
     loginModal.classList.remove("show");
@@ -602,50 +598,50 @@ function loginAdmin() {
     renderRentalsTable();
 
     alert("Login admin berhasil!");
-  } else {
-    alert("Username atau password salah!");
   }
-}
 
-function logoutAdmin() {
-  isAdmin = false;
-  adminPanel.style.display = "none";
+  async function logoutAdmin() {
+    await db.auth.signOut();
 
-  updateAdminButton();
-  loadBikes();
+    isAdmin = false;
+    adminPanel.style.display = "none";
 
-  alert("Logout admin.");
-}
+    updateAdminButton();
+    loadBikes();
 
-function closeLogin() {
-  loginModal.classList.remove("show");
-}
-
-function updateAdminButton() {
-  adminBtn.innerHTML = isAdmin
-    ? '<i class="fa-solid fa-unlock"></i> Logout'
-    : '<i class="fa-solid fa-lock"></i> Admin';
-}
-
-/* ===============================
-   ADMIN BUTTON HANDLER
-================================= */
-
-adminBtn.onclick = () => {
-  if (!isAdmin) {
-    loginModal.classList.add("show");
-  } else {
-    logoutAdmin();
+    alert("Logout admin.");
   }
-};
 
-// Pastikan teks tombol benar saat load
-updateAdminButton();
+  async function checkAdminSession() {
+    const { data } = await db.auth.getSession();
 
+    isAdmin = !!data.session;
+    adminPanel.style.display = isAdmin ? "block" : "none";
 
+    updateAdminButton();
+    loadBikes();
+  }
 
+  function closeLogin() {
+    loginModal.classList.remove("show");
+  }
 
+  function updateAdminButton() {
+    adminBtn.innerHTML = isAdmin
+      ? '<i class="fa-solid fa-unlock"></i> Logout'
+      : '<i class="fa-solid fa-lock"></i> Admin';
+  }
 
+  adminBtn.onclick = () => {
+    if (!isAdmin) {
+      loginModal.classList.add("show");
+    } else {
+      logoutAdmin();
+    }
+  };
+
+  checkAdminSession();
+});
 
 /* ===============================
      7. LOAD RIWAYAT SEWA

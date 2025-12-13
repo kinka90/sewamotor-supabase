@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Aplikasi Sewa Motor - Supabase</title>
 
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<!-- jsPDF AutoTable -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -135,6 +142,12 @@
 </div>
 
   <h4>Riwayat Sewa</h4>
+
+  <button class="btn"
+  style="background:#02396f;color:white;margin-bottom:10px;"
+  onclick="downloadPdfSupabase()">
+  <i class="fa fa-file-pdf"></i> Download PDF 
+  </button>
 
   <button id="deleteAllRentalsBtn" class="btn" 
   style="background:#b90909;color:white;margin-bottom:10px;">
@@ -404,6 +417,14 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
   /* ===========================
         KIRIM STRUK WA
      ===========================*/
+// Ambil nama motor berdasarkan bikeId
+  const { data: bikeData, error: bikeErr } = await db
+    .from("bikes")
+    .select("name")
+    .eq("id", bikeId)
+    .single();
+
+  const bikeName = bikeData ? bikeData.name : "-";
 
   const struk = 
 `*Sewa Motor Berhasil*
@@ -411,7 +432,7 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
   Nama: ${name}
   No HP: ${phone}
 
-  Motor: ${bikeId}
+  Motor: ${bikeName}
   Durasi: ${hours} jam
 
   Mulai: ${toLocal(start)}
@@ -753,6 +774,7 @@ async function returnBike(rentalId, bikeId) {
   *Sewa Motor Telah Selesai*
 
   Nama: ${rental.name}
+  Motor: ${rental.bikes ? rental.bikes.name : "-"}
   Mulai: ${toLocal(start)}
   Kembali: ${toLocal(end)}
   Durasi: ${diffHours} jam
@@ -860,39 +882,63 @@ async function initialRefresh() {
 initialRefresh();
 
 /* ===============================
-   15. OPTIONAL: DOWNLOAD PDF (if jsPDF ter-include)
+   15. DOWNLOAD PDF RIWAYAT SEWA
    =============================== */
 
 async function downloadPdfSupabase() {
-  // require jsPDF + autotable sudah diload di halaman
-  const { data: rentals } = await db.from("rentals").select("*").order("start_time", { ascending: false });
-  if (!rentals || rentals.length === 0) return alert("Belum ada data sewa.");
+  const { data: rentals } = await db
+    .from("rentals")
+    .select("*")
+    .order("start_time", { ascending: false });
 
-  const { jsPDF } = window.jspdf || {};
-  if (!jsPDF) return alert("jsPDF tidak ditemukan. Pastikan script jsPDF ada di halaman.");
+  if (!rentals || rentals.length === 0) {
+    alert("Belum ada data sewa.");
+    return;
+  }
 
+  const { jsPDF } = window.jspdf;
   const doc = new jsPDF("l", "pt", "a4");
-  doc.setFontSize(12);
-  doc.text("Buku Kas Sewa Motor", 40, 40);
+
+  doc.setFontSize(14);
+  doc.text("LAPORAN RIWAYAT SEWA MOTOR", 40, 40);
 
   const rows = [];
+
   for (const r of rentals) {
-    const { data: bike } = await db.from("bikes").select("name").eq("id", r.bike_id).single();
+    const { data: bike } = await db
+      .from("bikes")
+      .select("name")
+      .eq("id", r.bike_id)
+      .single();
+
     rows.push([
-      r.name, bike?.name || r.bike_id, (r.duration || "-") + " jam",
-      "Rp " + numberWithDots(r.total), new Date(r.start_time).toLocaleString(), new Date(r.end_time).toLocaleString(), r.status
-    ]);
+    r.name || "-",
+    bike ? bike.name : "-",
+    r.phone || "-",
+    r.duration ? r.duration + " jam" : "-",
+    "Rp " + numberWithDots(r.total),
+    toLocal(r.start_time),
+    toLocal(r.end_time),          // Selesai
+    r.ktp || "-",                 // KTP/KTM
+    toLocal(r.return_time),       // Kembalikan
+    r.status || "-"
+  ]);
+
   }
 
   doc.autoTable({
     startY: 70,
-    head: [["Nama", "Motor", "Durasi", "Total", "Mulai", "Selesai", "Status"]],
+    head: [[
+      "Nama", "Motor", "No HP", "Durasi",
+      "Total", "Mulai","Selesai", "KTP/KTM","Kembalikan", "Status"
+    ]],
     body: rows,
     styles: { fontSize: 9 }
   });
 
-  doc.save("BukuKasSewaMotor.pdf");
+  doc.save("Buku_Kas_Sewa_Motor.pdf");
 }
+
 
 </script>
 </body>

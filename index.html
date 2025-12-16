@@ -420,15 +420,6 @@ async function loadPublicInfo() {
     <small style="color:#888;">
       Diposting: ${toDateOnly(info.created_at)}
     </small>
-    ${
-      isAdmin
-        ? `<br>
-           <button class="btn" style="margin-top:6px;background:#b90909"
-             onclick="deletePublicInfo('${info.id}')">
-             <i class="fa fa-trash"></i> Hapus Info
-           </button>`
-        : ""
-    }
   `;
 }
 
@@ -485,10 +476,6 @@ async function saveInfo() {
       Diposting: ${toDateOnly(data.created_at)}
     </small>
     <br>
-    <button class="btn" style="margin-top:6px;background:#b90909"
-      onclick="deletePublicInfo('${data.id}')">
-      <i class="fa fa-trash"></i> Hapus Info
-    </button>
   `;
 
   // reset input
@@ -498,23 +485,6 @@ async function saveInfo() {
 
 
   alert("Info publik berhasil dipublikasikan!");
-}
-
-async function deletePublicInfo(id) {
-  if (!confirm("Hapus info publik ini?")) return;
-
-  const { error } = await db
-    .from("public_info")
-    .delete()
-    .eq("id", id);
-
-  if (error) {
-    alert("Gagal hapus info: " + error.message);
-    return;
-  }
-
-  document.getElementById("infoContent").innerText =
-    "Tidak ada informasi saat ini.";
 }
 
 

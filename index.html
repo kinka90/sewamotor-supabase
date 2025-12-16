@@ -569,6 +569,8 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
   const rentalDate = new Date(document.getElementById("rentalDate").value);
   const hasKTP = document.getElementById("ktp").checked;
   const hasKTM = document.getElementById("ktm").checked;
+  const hasbelumbayar = document.getElementById("belumbayar").checked;
+  const sudahbayar = document.getElementById("sudahbayar").value;
   const total = parseInt(totalInput.value);
 
   const start = rentalDate;
@@ -1228,6 +1230,7 @@ async function downloadPdfSupabase() {
 </script>
 </body>
 </html>
+
 
 
 

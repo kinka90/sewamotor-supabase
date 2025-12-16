@@ -93,8 +93,14 @@
       <div style="display:flex;gap:20px;margin-top:6px;">
         <label><input type="checkbox" id="ktp"> KTP</label>
         <label><input type="checkbox" id="ktm"> KTM</label>
+        <label><input type="checkbox" id="belumbayar"> Belum Bayar</label>
       </div>
 
+      <div>
+        <label>Sudah Bayar</label>
+        <input id="sudahbayar" required style="width:100%;" />
+      </div>
+       
       <div>
         <label>Tarif per Jam</label>
         <input id="rate" type="number" readonly style="background:#eee;width:100%;" />
@@ -217,8 +223,9 @@
       <th>Total</th>
       <th>Mulai</th>
       <th>Selesai</th>
-      <th>KTP/KTM</th>
+      <th>KTP/KTM/(Belum Bayar)</th>
       <th>Kembalikan</th>
+      <th>Sudah Bayar</th>
       <th>Status</th>
       <th>Aksi</th>
     </tr>
@@ -500,9 +507,6 @@ async function deletePublicInfo(id) {
 }
 
 
-
-
-
 /* ===============================
      4. MODAL SEWA
    =============================== */
@@ -581,7 +585,9 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
     return_time: null,
     status: "ongoing",
     ktp: hasKTP,
-    ktm: hasKTM
+    ktm: hasKTM,
+    belumbayar: hasbelumbayar,
+    sudahbayar
   });
 
   if (error) return alert("Gagal menyewa: " + error.message);
@@ -617,6 +623,9 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
 
   KTP: ${hasKTP ? "Ya" : "Tidak"}
   KTM: ${hasKTM ? "Ya" : "Tidak"}
+  Belum Bayar: ${hasbelumbayar ? "Ya" : "Tidak"} 
+
+  Sudah Bayar: ${sudahbayar}
 
   Terima kasih telah menggunakan layanan kami.
   `;
@@ -892,8 +901,9 @@ async function renderRentalsTable() {
       <td>Rp ${numberWithDots(r.total)}</td>
       <td>${toLocal(r.start_time)}</td>
       <td>${toLocal(r.end_time)}</td>
-      <td>${r.ktp ? "KTP " : ""}${r.ktm ? "KTM" : ""}</td>
+      <td>${r.ktp ? "KTP " : ""}${r.ktm ? "KTM" : ""}${r.belumbayar ? "Belum Bayar" : ""}</td>
       <td>${r.return_time ? toLocal(r.return_time) : "-"}</td>
+      <td>${r.sudahbayar}</td>
       <td>${r.status}</td>
       <td>
         ${r.status === "ongoing"
@@ -1193,8 +1203,9 @@ async function downloadPdfSupabase() {
     "Rp " + numberWithDots(r.total),
     toLocal(r.start_time),
     toLocal(r.end_time),                                  // Selesai
-    (r.ktp ? "KTP " : "") + (r.ktm ? "KTM" : "") || "-",  // KTP/KTM
+    (r.ktp ? "KTP " : "") + (r.ktm ? "KTM" : "") + (r.belumbayar ? "Belum Bayar" : "") || "-",  // KTP/KTM/Belum Bayar
     toLocal(r.return_time),                               // Kembalikan
+    r.sudahbayar || "-",
     r.status || "-"
   ]);
 
@@ -1204,7 +1215,7 @@ async function downloadPdfSupabase() {
     startY: 70,
     head: [[
       "Nama", "Motor", "No HP", "Durasi",
-      "Total", "Mulai","Selesai", "KTP/KTM","Kembalikan", "Status"
+      "Total", "Mulai","Selesai", "KTP/KTM/(Belum Bayar)","Kembalikan", "Sudah Bayar",  "Status"
     ]],
     body: rows,
     styles: { fontSize: 9 }
@@ -1217,6 +1228,7 @@ async function downloadPdfSupabase() {
 </script>
 </body>
 </html>
+
 
 
 

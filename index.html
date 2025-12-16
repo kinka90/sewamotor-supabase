@@ -46,7 +46,7 @@
 </header>
 
 <p style="color:#666;font-size:13px;">
-  Aman, Cepat dan Terjangkau.
+  Semua data tersimpan realtime di Supabase. Cocok untuk multi pengguna.
 </p>
 
 <div id="infoBox" class="card" style="margin:15px 0; background:#fff7e6;">
@@ -248,7 +248,7 @@
   </div>
 </div>
 
-<footer>© Copyright 2025 | IRENGIAS | Universitas Muhammadiyah Maluku Utara </footer>
+<footer>Realtime by Supabase</footer>
 
 <script>
 /* ===============================
@@ -342,24 +342,42 @@ async function loadBikes() {
       </div>
       <h3>${b.name}</h3>
       <p>Rp ${b.rate_hour}/jam</p>
-      <span class="status ${b.status === 'available' ? 'available':'rented'}">
-        ${b.status === "available" ? "Tersedia" : "Disewa"}
+      <span class="status ${
+        b.status === "available" ? "available" :
+        b.status === "maintenance" ? "rented" : "rented"
+      }">
+        ${
+          b.status === "available" ? "Tersedia" :
+          b.status === "maintenance" ? "Rusak / Diperbaiki" :
+          "Disewa"
+        }
       </span>
       ${rentInfo}
       <div class="actions">
         <button class="btn" onclick="showDetail('${b.id}')">Detail</button>
+
         ${
-          isAdmin
-            ? `
-            <button class="btn" onclick="openRent('${b.id}')" ${b.status !== "available" ? "disabled":""}>Sewa</button>
-            
-            <button class="btn" style="background:#b03;color:#fff;"
+          isAdmin ? `
+            <button class="btn"
+              onclick="openRent('${b.id}')"
+              ${b.status !== "available" ? "disabled" : ""}>
+              Sewa
+            </button>
+
+            <button class="btn" style="background:#b03"
               onclick="deleteBike('${b.id}')">Hapus</button>
 
-            <button class="btn" style="background:#555;color:#fff;"
+            <button class="btn" style="background:#555"
               onclick="editBike('${b.id}')">Edit</button>
 
-            `: ""
+            ${
+              b.status !== "maintenance"
+                ? `<button class="btn" style="background:#d97706"
+                    onclick="setMaintenance('${b.id}')">🚧 Rusak</button>`
+                : `<button class="btn" style="background:#059669"
+                    onclick="setAvailable('${b.id}')">✅ Ada</button>`
+            }
+          ` : ""
         }
       </div>
     `;
@@ -497,11 +515,22 @@ const totalInput = document.getElementById("total");
 const hoursInput = document.getElementById("hours");
 
 async function openRent(id) {
+    // Cek status motor dulu
+  const { data: bike } = await db
+    .from("bikes")
+    .select("status, rate_hour, rate_day")
+    .eq("id", id)
+    .single();
+
+  if (!bike || bike.status !== "available") {
+    alert("Motor tidak tersedia / sedang diperbaiki!");
+    return;
+  }
+
   document.getElementById("bikeId").value = id;
   document.getElementById("modalTitle").innerHTML = "Form Sewa Motor";
   
   // Ambil data motor
-  const { data: bike } = await db.from("bikes").select("*").eq("id", id).single();
   rateInput.value = bike.rate_hour;
   totalInput.value = bike.rate_hour * parseInt(hoursInput.value);
 
@@ -544,6 +573,23 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const bikeId = document.getElementById("bikeId").value;
+    /* =========================
+     1️⃣ CEK STATUS MOTOR DULU
+     ========================= */
+  const { data: cek, error: cekErr } = await db
+    .from("bikes")
+    .select("status")
+    .eq("id", bikeId)
+    .single();
+
+  if (cekErr || !cek || cek.status !== "available") {
+    alert("Motor tidak tersedia / sedang diperbaiki!");
+    return;
+  }
+
+  /* =========================
+     2️⃣ AMBIL DATA FORM
+     ========================= */
   const name = document.getElementById("name").value;
   const phone = document.getElementById("phone").value;
   const hours = parseInt(document.getElementById("hours").value);
@@ -629,6 +675,33 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
   rentModal.classList.remove("show");
 });
 
+
+
+/* ==========================================
+   MINTENANCE MOTOR (Motor Rusak/diperbaiki)
+   ========================================== */
+
+async function setMaintenance(bikeId) {
+  if (!confirm("Set motor sebagai RUSAK / DIPERBAIKI?")) return;
+
+  await db.from("bikes")
+    .update({ status: "maintenance" })
+    .eq("id", bikeId);
+
+  alert("Motor diset ke status RUSAK / DIPERBAIKI");
+  loadBikes();
+}
+
+async function setAvailable(bikeId) {
+  if (!confirm("Set motor sebagai TERSEDIA kembali?")) return;
+
+  await db.from("bikes")
+    .update({ status: "available" })
+    .eq("id", bikeId);
+
+  alert("Motor siap disewa kembali");
+  loadBikes();
+}
 
 
 /* ===============================
@@ -978,7 +1051,6 @@ document.getElementById("deleteAllRentalsBtn").onclick = async () => {
   };
 };
 
-
 /* ===============================
    11. KEMBALIKAN MOTOR (UPDATE)
    =============================== */
@@ -1211,9 +1283,6 @@ async function downloadPdfSupabase() {
 </script>
 </body>
 </html>
-
-
-
 
 
 

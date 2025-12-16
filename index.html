@@ -21,13 +21,14 @@
   .container { max-width:1100px; margin:auto; }
   h1 { margin:0; font-size:22px; }
   .btn { background:#2b7a78; color:#fff; padding:8px 12px; border-radius:8px; border:none; cursor:pointer; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:18px; }
-  .card { background:white; padding:12px; border-radius:12px; box-shadow:0 6px 16px rgba(0,0,0,0.08); }
+  .grid {display: grid;grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));gap: 20px}
+  .card { background:white; padding:14px; border-radius:14px; box-shadow:0 6px 16px rgba(0,0,0,0.08); overflow: hidden;}
   .motor-img { height:140px; border-radius:8px; background:#eef; display:flex; align-items:center; justify-content:center; font-size:48px; }
   .status { padding:6px 8px; border-radius:8px; font-weight:600; }
   .available { background:#e6fff9; color:#007a5f; }
   .rented { background:#fff2f2; color:#b90909; }
-  .actions { margin-top:10px; display:flex; gap:8px; }
+  .actions { margin-top:12px; display:flex; flex-wrap: wrap;  gap:8px; }
+  .actions .btn {flex: 1 1 45%; font-size: 13px; padding: 7px 8px;white-space: nowrap;}
   .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); justify-content:center; align-items:center; }
   .modal.show { display:flex; }
   .dialog { background:white; padding:18px; border-radius:12px; width:420px; }

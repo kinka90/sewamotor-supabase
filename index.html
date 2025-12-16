@@ -399,36 +399,39 @@ function closeDetail() {
    LOAD PUBLIC INFO
 ================================= */
 async function loadPublicInfo() {
-  const { data } = await db
+  const { data, error } = await db
     .from("public_info")
     .select("*")
     .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
+    .limit(1);
 
   const box = document.getElementById("infoContent");
 
-  if (!data) {
+  if (error || !data || data.length === 0) {
     box.innerText = "Tidak ada informasi saat ini.";
     return;
   }
 
+  const info = data[0];
+
   box.innerHTML = `
-    <b>${data.title || "Info"}</b><br>
-    ${data.message}<br>
+    <b>${info.title || "Info"}</b><br>
+    ${info.message}<br>
     <small style="color:#888;">
-      Diposting: ${toDateOnly(data.created_at)}
+      Diposting: ${toDateOnly(info.created_at)}
     </small>
     ${
       isAdmin
-        ? `<br><button class="btn" style="margin-top:6px;background:#b90909"
-            onclick="deletePublicInfo('${data.id}')">
-            <i class="fa fa-trash"></i> Hapus Info
-          </button>`
+        ? `<br>
+           <button class="btn" style="margin-top:6px;background:#b90909"
+             onclick="deletePublicInfo('${info.id}')">
+             <i class="fa fa-trash"></i> Hapus Info
+           </button>`
         : ""
     }
   `;
 }
+
 
 function toDateOnly(dateInput) {
   if (!dateInput) return "-";
@@ -442,13 +445,19 @@ function toDateOnly(dateInput) {
 loadPublicInfo();
 
 
-db.channel("public-info")
-  .on(
-    "postgres_changes",
-    { event: "*", schema: "public", table: "public_info" },
-    () => loadPublicInfo()
-  )
-  .subscribe();
+if (!window.publicInfoChannel) {
+  window.publicInfoChannel = db
+    .channel("public-info-realtime")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "public_info" },
+      () => {
+        loadPublicInfo();
+      }
+    )
+    .subscribe();
+}
+
 
 
 async function saveInfo() {
@@ -485,6 +494,8 @@ async function saveInfo() {
   // reset input
   document.getElementById("infoTitle").value = "";
   document.getElementById("infoMessage").value = "";
+  document.getElementById("infoBox").scrollIntoView({ behavior: "smooth" });
+
 
   alert("Info publik berhasil dipublikasikan!");
 }
@@ -1230,7 +1241,6 @@ async function downloadPdfSupabase() {
 </script>
 </body>
 </html>
-
 
 
 

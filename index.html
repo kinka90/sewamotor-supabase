@@ -46,7 +46,7 @@
   .rental-table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 1100px; /* biar rapi seperti PDF */
+    min-width: 1100px;
   }
 
   .rental-table th,
@@ -630,6 +630,15 @@ async function openRent(id) {
 document.getElementById("rentForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
+  if (isSubmittingRent) return; // 🔒 cegah dobel submit
+  isSubmittingRent = true;
+
+  const submitBtn = e.target.querySelector("button");
+  submitBtn.disabled = true;
+  submitBtn.innerText = "Memproses...";
+
+  try {
+
   const bikeId = document.getElementById("bikeId").value;
     /* =========================
      1️⃣ CEK STATUS MOTOR DULU
@@ -641,9 +650,14 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
     .single();
 
   if (cekErr || !cek || cek.status !== "available") {
-    alert("Motor tidak tersedia / sedang diperbaiki!");
-    return;
-  }
+  alert("Motor tidak tersedia / sedang diperbaiki!");
+
+  isSubmittingRent = false;
+  submitBtn.disabled = false;
+  submitBtn.innerText = "Konfirmasi Sewa";
+  return;
+}
+
 
   /* =========================
      2️⃣ AMBIL DATA FORM
@@ -677,7 +691,7 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
     sudahbayar
   });
 
-  if (error) return alert("Gagal menyewa: " + error.message);
+  if (error) throw error;
 
   // Update status motor
   await db.from("bikes").update({ status: "rented" }).eq("id", bikeId);
@@ -730,7 +744,16 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
   window.open(`https://wa.me/${renterWA}?text=${waText}`, "_blank");
 
   alert("Motor berhasil disewa dan struk terkirim via WhatsApp!");
-  rentModal.classList.remove("show");
+    rentModal.classList.remove("show");
+
+  } catch (err) {
+    alert("Gagal menyewa: " + err.message);
+  } finally {
+    
+    isSubmittingRent = false;
+    submitBtn.disabled = false;
+    submitBtn.innerText = "Konfirmasi Sewa";
+  }
 });
 
 

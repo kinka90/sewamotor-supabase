@@ -1004,7 +1004,10 @@ async function renderRentalsTable() {
 
   const { data: rentals, error } = await db
     .from("rentals")
-    .select("*")
+    .select(`
+      *,
+      bikes(name)
+    `)
     .order("start_time", { ascending: false }); // 🔥 TERBARU DI ATAS
 
   if (error) {
@@ -1014,19 +1017,13 @@ async function renderRentalsTable() {
   }
 
   const tbody = document.getElementById("rentalTable");
-  tbody.innerHTML = ""; // 🔥 RESET SEKALI
+  tbody.innerHTML = ""; // ✅ RESET SEKALI
 
-  for (const r of rentals) {
-    const { data: b } = await db
-      .from("bikes")
-      .select("name")
-      .eq("id", r.bike_id)
-      .single();
-
+  rentals.forEach(r => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${r.name}</td>
-      <td>${b?.name || "-"}</td>
+      <td>${r.bikes?.name || "-"}</td>
       <td>${r.phone}</td>
       <td>${r.duration} jam</td>
       <td>Rp ${numberWithDots(r.total)}</td>
@@ -1037,19 +1034,21 @@ async function renderRentalsTable() {
       <td>${r.sudahbayar}</td>
       <td>${r.status}</td>
       <td>
-        ${r.status === "ongoing"
-          ? `<button class="btn" onclick="returnBike('${r.id}','${r.bike_id}')">Selesai</button>`
-          : ""
+        ${
+          r.status === "ongoing"
+            ? `<button class="btn" onclick="returnBike('${r.id}','${r.bike_id}')">Selesai</button>`
+            : ""
         }
         <button class="btn" style="background:#b03;color:#fff;margin-left:6px;"
           onclick="deleteRentalSupabase('${r.id}','${r.bike_id}')">Hapus</button>
       </td>
     `;
-    tbody.appendChild(tr); // ✅ WAJIB
-  }
+    tbody.appendChild(tr); // ✅ APPEND saja (sudah DESC)
+  });
 
   isRenderingRentals = false;
 }
+
 
 /* ===============================
     HAPUS SEMUA RIWAYAT SEWA (SAFE)

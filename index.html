@@ -1049,7 +1049,7 @@ async function renderRentalsTable() {
           onclick="deleteRentalSupabase('${r.id}','${r.bike_id}')">Hapus</button>
       </td>
     `;
-    tbody.appendChild(tr);
+    tbody.prepend(tr);
   }
   isRenderingRentals = false;
 }

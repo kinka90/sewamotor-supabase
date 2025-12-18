@@ -32,6 +32,61 @@
   .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); justify-content:center; align-items:center; }
   .modal.show { display:flex; }
   .dialog { background:white; padding:18px; border-radius:12px; width:420px; }
+
+    /* ===============================
+    TABEL RIWAYAT RESPONSIVE
+  ================================ */
+  .table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    background: white;
+    border-radius: 12px;
+  }
+
+  .rental-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 1100px; /* biar rapi seperti PDF */
+  }
+
+  .rental-table th,
+  .rental-table td {
+    padding: 8px 10px;
+    font-size: 13px;
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .rental-table th {
+    background: #f3f4f6;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  .rental-table tr:hover {
+    background: #f9fafb;
+  }
+
+  /* Tombol di tabel */
+  .rental-table .btn {
+    padding: 5px 8px;
+    font-size: 12px;
+    border-radius: 6px;
+  }
+
+  /* ===============================
+    MOBILE MODE
+  ================================ */
+  @media (max-width: 768px) {
+    .rental-table {
+      font-size: 12px;
+      min-width: 900px;
+    }
+  }
+
   table { width:100%; border-collapse:collapse; }
   td, th { padding:8px; border-bottom:1px solid #eee; }
   footer { text-align:center; margin-top:20px; color:#666; }
@@ -214,7 +269,8 @@
   style="background:#b90909;color:white;margin-bottom:10px;">
   <i class="fa fa-trash"></i> Hapus Semua Riwayat
   </button>
-<table>
+<div class="table-wrapper">
+  <table class="rental-table">
   <thead>
     <tr>
       <th>Nama</th>
@@ -232,7 +288,8 @@
     </tr>
   </thead>
   <tbody id="rentalTable"></tbody>
-</table>
+  </table>
+</div>
 </div>
 
 </div>

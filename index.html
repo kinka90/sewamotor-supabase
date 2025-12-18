@@ -167,7 +167,10 @@
         <input id="total" type="number" readonly style="background:#eee;width:100%;" />
       </div>
 
-      <button class="btn" style="width:100%;margin-top:6px;">Konfirmasi Sewa</button>
+      <button id="submitRentBtn" class="btn" style="width:100%;margin-top:6px;">
+        Konfirmasi Sewa
+      </button>
+
     </form>
 
     <button id="closeModal" class="btn" style="width:100%;background:#777;margin-top:8px;">
@@ -627,19 +630,19 @@ async function openRent(id) {
 /* ===============================
      5. SIMPAN SEWA KE SUPABASE
    =============================== */
+let isSubmittingRent = false;
 document.getElementById("rentForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
   if (isSubmittingRent) return; // 🔒 cegah dobel submit
   isSubmittingRent = true;
 
-  const submitBtn = e.target.querySelector("button");
+  const submitBtn = document.getElementById("submitRentBtn");
   submitBtn.disabled = true;
   submitBtn.innerText = "Memproses...";
 
   try {
-
-  const bikeId = document.getElementById("bikeId").value;
+    const bikeId = document.getElementById("bikeId").value;
     /* =========================
      1️⃣ CEK STATUS MOTOR DULU
      ========================= */
@@ -650,13 +653,8 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
     .single();
 
   if (cekErr || !cek || cek.status !== "available") {
-  alert("Motor tidak tersedia / sedang diperbaiki!");
-
-  isSubmittingRent = false;
-  submitBtn.disabled = false;
-  submitBtn.innerText = "Konfirmasi Sewa";
-  return;
-}
+      throw new Error("Motor tidak tersedia / sedang diperbaiki!");
+    }
 
 
   /* =========================

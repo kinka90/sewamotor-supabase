@@ -1062,7 +1062,7 @@ async function returnBike(rentalId, bikeId) {
   // Ambil data rental + harga motor
   const { data: rental, error: err1 } = await db
     .from("rentals")
-    .select("*, bikes(rate_hour)")
+    .select("*, bikes(rate_hour, rate_day)")
     .eq("id", rentalId)
     .single();
 
@@ -1079,8 +1079,20 @@ async function returnBike(rentalId, bikeId) {
   const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
 
   // Hitung total otomatis
-  const rate = rental.bikes.rate_hour;
-  const total = diffHours * rate;
+  const rateHour = rental.bikes.rate_hour;
+  const rateDay  = rental.bikes.rate_day;
+
+  // 🔥 HITUNG TOTAL SESUAI ATURAN
+  let total = 0;
+
+  if (diffHours >= 24) {
+    const days = Math.floor(diffHours / 24);
+    const extraHours = diffHours % 24;
+    total = (days * rateDay) + (extraHours * rateHour);
+  } else {
+    total = diffHours * rateHour;
+  }
+
 
   // Update rental lengkap + return_time dalam format ISO
   const { error: err2 } = await db

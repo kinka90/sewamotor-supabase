@@ -32,61 +32,6 @@
   .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); justify-content:center; align-items:center; }
   .modal.show { display:flex; }
   .dialog { background:white; padding:18px; border-radius:12px; width:420px; }
-
-    /* ===============================
-    TABEL RIWAYAT RESPONSIVE
-  ================================ */
-  .table-wrapper {
-    width: 100%;
-    overflow-x: auto;
-    background: white;
-    border-radius: 12px;
-  }
-
-  .rental-table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 1100px;
-  }
-
-  .rental-table th,
-  .rental-table td {
-    padding: 8px 10px;
-    font-size: 13px;
-    text-align: left;
-    white-space: nowrap;
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  .rental-table th {
-    background: #f3f4f6;
-    font-weight: 600;
-    position: sticky;
-    top: 0;
-    z-index: 2;
-  }
-
-  .rental-table tr:hover {
-    background: #f9fafb;
-  }
-
-  /* Tombol di tabel */
-  .rental-table .btn {
-    padding: 5px 8px;
-    font-size: 12px;
-    border-radius: 6px;
-  }
-
-  /* ===============================
-    MOBILE MODE
-  ================================ */
-  @media (max-width: 768px) {
-    .rental-table {
-      font-size: 12px;
-      min-width: 900px;
-    }
-  }
-
   table { width:100%; border-collapse:collapse; }
   td, th { padding:8px; border-bottom:1px solid #eee; }
   footer { text-align:center; margin-top:20px; color:#666; }
@@ -167,10 +112,7 @@
         <input id="total" type="number" readonly style="background:#eee;width:100%;" />
       </div>
 
-      <button id="submitRentBtn" class="btn" style="width:100%;margin-top:6px;">
-        Konfirmasi Sewa
-      </button>
-
+      <button class="btn" style="width:100%;margin-top:6px;">Konfirmasi Sewa</button>
     </form>
 
     <button id="closeModal" class="btn" style="width:100%;background:#777;margin-top:8px;">
@@ -272,8 +214,7 @@
   style="background:#b90909;color:white;margin-bottom:10px;">
   <i class="fa fa-trash"></i> Hapus Semua Riwayat
   </button>
-<div class="table-wrapper">
-  <table class="rental-table">
+<table>
   <thead>
     <tr>
       <th>Nama</th>
@@ -291,8 +232,7 @@
     </tr>
   </thead>
   <tbody id="rentalTable"></tbody>
-  </table>
-</div>
+</table>
 </div>
 
 </div>
@@ -630,19 +570,10 @@ async function openRent(id) {
 /* ===============================
      5. SIMPAN SEWA KE SUPABASE
    =============================== */
-let isSubmittingRent = false;
 document.getElementById("rentForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  if (isSubmittingRent) return; // 🔒 cegah dobel submit
-  isSubmittingRent = true;
-
-  const submitBtn = document.getElementById("submitRentBtn");
-  submitBtn.disabled = true;
-  submitBtn.innerText = "Memproses...";
-
-  try {
-    const bikeId = document.getElementById("bikeId").value;
+  const bikeId = document.getElementById("bikeId").value;
     /* =========================
      1️⃣ CEK STATUS MOTOR DULU
      ========================= */
@@ -653,9 +584,9 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
     .single();
 
   if (cekErr || !cek || cek.status !== "available") {
-      throw new Error("Motor tidak tersedia / sedang diperbaiki!");
-    }
-
+    alert("Motor tidak tersedia / sedang diperbaiki!");
+    return;
+  }
 
   /* =========================
      2️⃣ AMBIL DATA FORM
@@ -689,7 +620,7 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
     sudahbayar
   });
 
-  if (error) throw error;
+  if (error) return alert("Gagal menyewa: " + error.message);
 
   // Update status motor
   await db.from("bikes").update({ status: "rented" }).eq("id", bikeId);
@@ -742,16 +673,7 @@ document.getElementById("rentForm").addEventListener("submit", async (e) => {
   window.open(`https://wa.me/${renterWA}?text=${waText}`, "_blank");
 
   alert("Motor berhasil disewa dan struk terkirim via WhatsApp!");
-    rentModal.classList.remove("show");
-
-  } catch (err) {
-    alert("Gagal menyewa: " + err.message);
-  } finally {
-    
-    isSubmittingRent = false;
-    submitBtn.disabled = false;
-    submitBtn.innerText = "Konfirmasi Sewa";
-  }
+  rentModal.classList.remove("show");
 });
 
 
@@ -999,55 +921,62 @@ document.getElementById("saveBikeBtn").onclick = async () => {
    10. RENDER RENTALS TABLE (dengan nama motor)
    =============================== */
 async function renderRentalsTable() {
-  if (!isAdmin || isRenderingRentals) return;
+  if (!isAdmin) {
+    const tbody = document.getElementById("rentalTable");
+    if (tbody) tbody.innerHTML = "";
+    return;
+  }
+  if (isRenderingRentals) return;
   isRenderingRentals = true;
 
   const { data: rentals, error } = await db
     .from("rentals")
-    .select(`
-      *,
-      bikes(name)
-    `)
-    .order("start_time", { ascending: false }); // 🔥 TERBARU DI ATAS
+    .select("*")
+    .order("start_time", { ascending: false });
 
   if (error) {
-    console.error(error.message);
-    isRenderingRentals = false;
+    console.error("Gagal load rentals:", error.message);
     return;
   }
 
   const tbody = document.getElementById("rentalTable");
-  tbody.innerHTML = ""; // ✅ RESET SEKALI
+  tbody.innerHTML = "";
 
-  rentals.forEach(r => {
+  for (const r of rentals) {
+    const { data: b } = await db
+      .from("bikes")
+      .select("name")
+      .eq("id", r.bike_id)
+      .single();
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${r.name}</td>
-      <td>${r.bikes?.name || "-"}</td>
+      <td>${b ? b.name : "-"}</td>
       <td>${r.phone}</td>
       <td>${r.duration} jam</td>
       <td>Rp ${numberWithDots(r.total)}</td>
       <td>${toLocal(r.start_time)}</td>
       <td>${toLocal(r.end_time)}</td>
-      <td>${r.ktp ? "KTP " : ""}${r.ktm ? "KTM " : ""}${r.belumbayar ? "Belum Bayar" : ""}</td>
+      <td>${r.ktp ? "KTP " : ""}${r.ktm ? "KTM" : ""}${r.belumbayar ? "Belum Bayar" : ""}</td>
       <td>${r.return_time ? toLocal(r.return_time) : "-"}</td>
       <td>${r.sudahbayar}</td>
       <td>${r.status}</td>
       <td>
-        ${
-          r.status === "ongoing"
-            ? `<button class="btn" onclick="returnBike('${r.id}','${r.bike_id}')">Selesai</button>`
-            : ""
+        ${r.status === "ongoing"
+          ? `<button class="btn" onclick="returnBike('${r.id}','${r.bike_id}')">Selesai</button>`
+          : ""
         }
         <button class="btn" style="background:#b03;color:#fff;margin-left:6px;"
           onclick="deleteRentalSupabase('${r.id}','${r.bike_id}')">Hapus</button>
       </td>
     `;
-    tbody.appendChild(tr); // ✅ APPEND saja (sudah DESC)
-  });
-
+    tbody.appendChild(tr);
+  }
   isRenderingRentals = false;
 }
+
+
 
 
 /* ===============================
@@ -1133,7 +1062,7 @@ async function returnBike(rentalId, bikeId) {
   // Ambil data rental + harga motor
   const { data: rental, error: err1 } = await db
     .from("rentals")
-    .select("*, bikes(rate_hour, rate_day)")
+    .select("*, bikes(rate_hour)")
     .eq("id", rentalId)
     .single();
 
@@ -1150,20 +1079,8 @@ async function returnBike(rentalId, bikeId) {
   const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
 
   // Hitung total otomatis
-  const rateHour = rental.bikes.rate_hour;
-  const rateDay  = rental.bikes.rate_day;
-
-  // 🔥 HITUNG TOTAL SESUAI ATURAN
-  let total = 0;
-
-  if (diffHours >= 24) {
-    const days = Math.floor(diffHours / 24);
-    const extraHours = diffHours % 24;
-    total = (days * rateDay) + (extraHours * rateHour);
-  } else {
-    total = diffHours * rateHour;
-  }
-
+  const rate = rental.bikes.rate_hour;
+  const total = diffHours * rate;
 
   // Update rental lengkap + return_time dalam format ISO
   const { error: err2 } = await db

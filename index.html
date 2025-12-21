@@ -3,6 +3,10 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+<link rel="icon" href="img/Logo Rental.png" sizes="32x32">
+<link rel="icon" href="img/Logo Rental.png" sizes="48x48">
+<link rel="apple-touch-icon" href="img/Logo Rental.png">
 <title>Aplikasi Sewa Motor Rental Merah Putih</title>
 
 <!-- jsPDF -->
@@ -14,7 +18,19 @@
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
+<!-- Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Supabase JS -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+window.addEventListener("scroll", () => {
+  document.querySelector(".navbar")
+    .classList.toggle("scrolled", window.scrollY > 50);
+});
+</script>
+
 
 <style>
   body { font-family: Inter, sans-serif; padding:20px; background:#f6f7fb; }
@@ -77,6 +93,91 @@
     border-radius: 6px;
   }
 
+  .dialog {
+  background:white;
+  padding:20px;
+  border-radius:12px;
+  width:420px;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  transition: 0.2s ease;
+}
+
+/*navbar shadow */
+.navbar {
+  transition: all 0.3s ease;
+}
+
+.navbar-brand {
+  font-size: 20px;
+  letter-spacing: 0.5px;
+}
+
+.nav-link {
+  font-weight: 500;
+  color: #333 !important;
+}
+
+.nav-link:hover {
+  color: #198754 !important;
+}
+
+.navbar .btn {
+  border-radius: 30px;
+}
+
+.navbar.scrolled {
+  background: #fff !important;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+}
+
+/*Footter*/
+/* FOOTER ELEGANT */
+.footer-elegant {
+    background: linear-gradient(135deg, #00352d, #0a8c78);
+    color: #333;
+    border-top: 1px solid #e5e7eb;
+}
+
+.footer-elegant h5 {
+    color: #feffc4;
+    font-weight: 600;
+}
+
+.footer-elegant p,
+.footer-elegant a,
+.footer-elegant small {
+    color: #ebe8e8;
+}
+
+.footer-elegant a {
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.footer-elegant a:hover {
+    color: #eae6e6;
+    transform: translateX(3px);
+}
+
+.footer-elegant i {
+    color: #f5f2f2;
+}
+
+.footer-elegant hr {
+    border-color: #ddd;
+}
+
+/*Logo Navbar*/
+.navbar-logo {
+  height: 58px;
+  width: auto;
+  border-radius: 6px;
+}
+
+
   /* ===============================
     MOBILE MODE
   ================================ */
@@ -87,6 +188,29 @@
     }
   }
 
+  @media (max-width: 576px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+
+@media (max-width: 576px) {
+  .card {
+    padding: 10px;
+  }
+
+  .motor-img {
+    height: 140px;
+  }
+
+  h3 {
+    font-size: 15px;
+  }
+}
+  body { font-family: Inter, sans-serif; padding:20px; background:#f6f7fb; }
+
   table { width:100%; border-collapse:collapse; }
   td, th { padding:8px; border-bottom:1px solid #eee; }
   footer { text-align:center; margin-top:20px; color:#666; }
@@ -94,27 +218,67 @@
 </head>
 
 <body>
-<div class="container">
+<div class="container py-3">
 
-<header style="display:flex;justify-content:space-between;align-items:center;">
-  <h1>Aplikasi Sewa Motor Rental Merah Putih</h1>
-  <button id="adminBtn" class="btn"><i class="fa-solid fa-lock"></i> Admin</button>
-</header>
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
+  <div class="container">
+
+    <!-- LOGO / BRAND -->
+    <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="#">
+      <img src="img/Logo Rental.png" class="navbar-logo">
+      <i class="fa-solid  text-success"></i>
+      <span>Rental Merah Putih</span>
+    </a>
+
+
+    <!-- TOGGLE MOBILE -->
+    <button class="navbar-toggler" type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#mainNavbar">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- MENU -->
+    <div class="collapse navbar-collapse" id="mainNavbar">
+      <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center">
+
+        <li class="nav-item">
+          <a class="nav-link active" href="#motorGrid">Motor</a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="#footer">About</a>
+        </li>
+
+        <li class="nav-item ms-lg-3">
+          <button id="adminBtn" class="btn btn-success px-4">
+            <i class="fa-solid fa-lock"></i> Admin
+          </button>
+        </li>
+
+      </ul>
+    </div>
+  </div>
+</nav>
+
 
 <p style="color:#666;font-size:13px;">
   Aman, Cepat dan Terjangkau.
 </p>
 
-<div id="infoBox" class="card" style="margin:15px 0; background:#fff7e6;">
-  <p style="font-size:13px;color:#a1046a;">
-    ℹ️ Penyewaan dilakukan langsung di lokasi rental. (Jam Buka 07:00 - 00:00 WIT) <br> 
-    Status motor ditampilkan secara realtime.
-  </p>
-  <h3 style="margin-bottom:6px;">📢 Info Terkini</h3>
-  <div id="infoContent" style="font-size:14px;color:#444;">
-    Tidak ada informasi saat ini.
+<div id="infoBox" class="card mb-4 border-warning">
+  <div class="card-body bg-warning-subtle">
+    <p class="small text-danger mb-2">
+      ℹ️ Penyewaan dilakukan langsung di lokasi rental (07:00 - 00:00 WIT)
+    </p>
+
+    <h5 class="fw-bold">📢 Info Terkini</h5>
+    <div id="infoContent" class="text-secondary">
+      Tidak ada informasi saat ini.
+    </div>
   </div>
 </div>
+
 
 <div id="motorGrid" class="grid"></div>
 
@@ -167,13 +331,13 @@
         <input id="total" type="number" readonly style="background:#eee;width:100%;" />
       </div>
 
-      <button id="submitRentBtn" class="btn" style="width:100%;margin-top:6px;">
+      <button id="submitRentBtn" class="btn btn-success w-100">
         Konfirmasi Sewa
       </button>
 
     </form>
 
-    <button id="closeModal" class="btn" style="width:100%;background:#777;margin-top:8px;">
+    <button id="closeModal" class="btn btn-secondary w-100 mt-2">
       Batal
     </button>
   </div>
@@ -272,7 +436,7 @@
   style="background:#b90909;color:white;margin-bottom:10px;">
   <i class="fa fa-trash"></i> Hapus Semua Riwayat
   </button>
-<div class="table-wrapper">
+<div class="table-responsive">
   <table class="rental-table">
   <thead>
     <tr>
@@ -309,15 +473,117 @@
   </div>
 </div>
 
-<footer>© Copyright 2025 | IRENGIAS | UMMU</footer>
+<!-- Footer Start -->
+<footer id="footer" class="footer-elegant pt-5">
+    <div class="container">
+        <div class="row">
+
+            <!-- INFO RENTAL -->
+            <div class="col-lg-4 col-md-6 mb-4 text-start">
+                <h5 class="mb-3">Rental Motor Merah Putih</h5>
+                <p class="mb-2">
+                    Layanan sewa motor per jam atau per hari dengan proses cepat,
+                    aman, dan terpercaya.
+                </p>
+                <p class="mb-1">
+                    <i class="fa fa-map-marker-alt me-2"></i>
+                    Kel. Sasa, Jl.KH.Ahmad Dahlan
+                </p>
+                <p class="mb-1">
+                    <i class="fa fa-phone-alt me-2"></i>
+                    <a href="https://wa.me/6281376539558"
+                      target="_blank"
+                      class="text-light text-decoration-none">
+                        +62 813-7653-9558
+                    </a>
+                </p>
+                <p class="mb-1">
+                    <i class="fa fa-envelope me-2"></i>
+                    support@rentalmerahputih.id
+                </p>
+            </div>
+
+            <!-- LINK PENTING -->
+            <div class="col-lg-3 col-md-6 mb-4 text-start">
+                <h5 class="mb-3">Link</h5>
+                <ul class="list-unstyled">
+                    <li class="mb-1">
+                        <a href="#motorGrid" class="text-light text-decoration-none">
+                            Daftar Motor
+                        </a>
+                    </li>
+                    <li class="mb-1">
+                        <a href="#infoBox" class="text-light text-decoration-none">
+                            Informasi Rental
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- SOSIAL MEDIA -->
+            <div class="col-lg-2 col-md-6 mb-4 text-start">
+                <h5 class="mb-3">Ikuti Kami</h5>
+                <div class="d-flex gap-3">
+
+                    <!-- FACEBOOK (opsional) -->
+                    <a href="https://facebook.com/" 
+                      target="_blank"
+                      class="text-light fs-5">
+                        <i class="fab fa-facebook-f"></i>
+                    </a>
+
+                    <!-- INSTAGRAM -->
+                    <a href="https://www.instagram.com/"
+                      target="_blank"
+                      class="text-light fs-5">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+
+                    <!-- WHATSAPP -->
+                    <a href="https://wa.me/6281376539558"
+                      target="_blank"
+                      class="text-light fs-5">
+                        <i class="fab fa-whatsapp"></i>
+                    </a>
+
+                </div>
+            </div>
+
+            <!-- MAP KECIL -->
+            <div class="col-lg-3 col-md-6 mb-4 text-start">
+                <h5 class="mb-3">Lokasi Kami</h5>
+                <iframe
+                    src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d1560.0456191411097!2d127.32464263372357!3d0.7617983914577098!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2s!5e1!3m2!1sen!2sid!4v1766329318688!5m2!1sen!2sid"
+                    width="100%"
+                    height="180"
+                    style="border:0;"
+                    allowfullscreen=""
+                    loading="lazy">
+                </iframe>
+            </div>
+
+        </div>
+
+        <hr class="border-secondary">
+
+        <div class="text-center pb-3">
+            <small>
+                © 2025 Rental Motor Merah Putih. || IRENGIAS || UMMU ||
+            </small>
+        </div>
+
+    </div>
+</footer>
+<!-- Footer End -->
+
 
 <script>
 /* ===============================
      1. INISIALISASI SUPABASE
    =============================== */
 
-const SUPABASE_URL = "https://ifafjxuwhaikoiateisi.supabase.co";
-const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmYWZqeHV3aGFpa29pYXRlaXNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1NDg4NjgsImV4cCI6MjA4MDEyNDg2OH0.id3IaMfUpgH8M_P2nB9G53scQdy5r7FHS_DrLpznHTY";
+const SUPABASE_URL = "https://jjdvpopexxqzwxfmsqxa.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqZHZwb3BleHhxend4Zm1zcXhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYyOTk0MTEsImV4cCI6MjA4MTg3NTQxMX0.IN8WT5bqZo9CZNOdF619v5MefMxvEilDM1GNhHQ_W18";
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
